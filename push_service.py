@@ -82,38 +82,22 @@ class MessagePusher:
 
     @staticmethod
     def push_to_telegram(bot_token, chat_id, message):
-        """推送到Telegram"""
+        """推送到单个 Telegram 账号"""
         url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-        
-        # 使用 Telegram 支持的 HTML 标签格式化消息
-        formatted_message = (
-            message.replace('🌈', '🌈')  # 保留表情符号
-                  .replace('\n', '\n')    # 保持原始换行
-                  .replace('━', '-')      # 替换不支持的分隔符
-                  .replace('•', '·')      # 替换不支持的符号
-        )
-        
-        # 使用 Telegram 的 HTML 格式
-        formatted_message = f"<b>{formatted_message}</b>"
-        
         data = {
             "chat_id": chat_id,
-            "text": formatted_message,
-            "parse_mode": "HTML",
-            "disable_web_page_preview": True
+            "text": message,
+            "parse_mode": "HTML"
         }
-        
         response = requests.post(url, json=data)
-        if not response.json().get('ok'):
-            # 如果 HTML 解析失败，尝试使用纯文本发送
-            data["parse_mode"] = None
-            response = requests.post(url, json=data)
-            if not response.json().get('ok'):
-                raise Exception(f"Telegram推送失败: {response.json().get('description', '未知错误')}")
+        result = response.json()
+        
+        if not result.get('ok'):
+            raise Exception(f"Telegram API 错误: {result.get('description', '未知错误')}")
 
     @staticmethod
     def push_to_wecom(webhook_url, message_data):
-        """推送到企业微信"""
+        """推送到单个企业微信群组"""
         # 获取问候语和温馨提示
         greeting = message_data.get('greeting', '')
         warm_tip = message_data.get('warm_tip', '')
@@ -135,10 +119,6 @@ class MessagePusher:
 
 {f'## 💝 温馨提示\n{warm_tip}' if warm_tip else ''}
 """
-
-        # 如果有彩虹屁文本，添加到消息末尾
-        if message_data.get('caihongpi'):
-            markdown_content += f"\n## ✨ 每日寄语\n{message_data['caihongpi']}"
         
         # 准备请求数据
         post_data = {
@@ -203,10 +183,27 @@ class MessagePusher:
         else:
             warm_tip_html = ''
 
+        # 处理纪念日信息
+        memorial_days = message_data.get('memorial_days', '')
+        if memorial_days:
+            memorial_days_html = f'''
+            <div class="memorial-days">
+                <h2 style="color: #333; font-size: 20px; margin: 0 0 15px;">
+                    <span style="display: inline-block; margin-right: 8px;">🎯</span>
+                    纪念日提醒
+                </h2>
+                {memorial_days.replace('\n', '<br>')}
+            </div>
+            '''
+        else:
+            memorial_days_html = ''
+
         # 准备模板数据
         template_data = {
             'greeting': greeting_html,
             'time': datetime.now().strftime('%Y-%m-%d %H:%M'),
+            'province': config.USER_CONFIG['province'],
+            'city': config.USER_CONFIG['city'],
             'temp': message_data.get('temp', 'N/A'),
             'feels_like': message_data.get('feels_like', 'N/A'),
             'wind_dir': message_data.get('wind_dir', 'N/A'),
@@ -214,6 +211,7 @@ class MessagePusher:
             'humidity': message_data.get('humidity', 'N/A'),
             'clothes_tip': message_data.get('clothes_tip', 'N/A'),
             'warm_tip': warm_tip_html,
+            'memorial_days_html': memorial_days_html,
             'hitokoto_text': message_data.get('hitokoto', {}).get('text', '今天也是美好的一天~'),
             'hitokoto_from': message_data.get('hitokoto', {}).get('from', '天气助手')
         }

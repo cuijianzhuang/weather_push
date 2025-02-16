@@ -1,5 +1,5 @@
 import requests
-from datetime import datetime
+from datetime import datetime, date
 import config
 from push_service import MessagePusher
 import http.client
@@ -118,6 +118,45 @@ def get_hitokoto():
         logger.error(f"获取一言失败: {str(e)}", exc_info=True)
         return None
 
+def calculate_days(target_date_str):
+    """计算距离目标日期的天数"""
+    target_date = datetime.strptime(target_date_str, '%Y-%m-%d').date()
+    today = date.today()
+    
+    # 计算今年的纪念日
+    this_year_date = target_date.replace(year=today.year)
+    
+    # 如果今年的纪念日已过，计算明年的
+    if this_year_date < today:
+        this_year_date = this_year_date.replace(year=today.year + 1)
+    
+    days_remaining = (this_year_date - today).days
+    years_passed = today.year - target_date.year
+    
+    return days_remaining, years_passed
+
+def get_memorial_days_message():
+    """获取纪念日消息"""
+    if not config.USER_CONFIG.get('memorial_days'):
+        return ""
+        
+    memorial_messages = []
+    for key, day_info in config.MEMORIAL_DAYS.items():
+        if day_info['enabled']:
+            days_remaining, years_passed = calculate_days(day_info['date'])
+            if days_remaining <= 30:  # 只显示30天内的纪念日
+                if days_remaining == 0:
+                    message = f"🎉 今天是{day_info['name']}！"
+                else:
+                    message = f"🎯 距离{day_info['name']}还有{days_remaining}天"
+                if years_passed > 0:
+                    message += f"（{years_passed}周年）"
+                memorial_messages.append(message)
+    
+    if memorial_messages:
+        return "\n━━━ 纪念日提醒 ━━━\n" + "\n".join(memorial_messages) + "\n"
+    return ""
+
 def format_message(weather_data, life_info, caihongpi_text=None):
     """根据模板格式化消息"""
     logger.info("开始格式化消息")
@@ -175,7 +214,9 @@ def format_message(weather_data, life_info, caihongpi_text=None):
         'humidity': weather_data.get('humidity', 'N/A'),
         'feels_like': weather_data.get('feels_like', 'N/A'),
         'clothes_tip': weather_data.get('clothes_tip', 'N/A'),
-        'warm_tip': f"💝 温馨提示：\n{tip}" if tip else ""
+        'warm_tip': f"💝 温馨提示：\n{tip}" if tip else "",
+        'province': config.USER_CONFIG['province'],
+        'memorial_days': get_memorial_days_message()
     }
     
     # 格式化基础消息
@@ -281,24 +322,6 @@ def push_message(weather_data, formatted_message):
     success_count = 0
     results = []
     
-    # 企业微信推送
-    if config.PUSH_METHODS.get('wecom', False):
-        logger.info("尝试推送到企业微信")
-        try:
-            MessagePusher.push_to_wecom(
-                config.WECOM_WEBHOOK,
-                weather_data
-            )
-            success_count += 1
-            results.append("✅ 企业微信：推送成功")
-            logger.info("企业微信推送成功")
-        except Exception as e:
-            results.append(f"❌ 企业微信：推送失败 - {str(e)}")
-            logger.error(f"企业微信推送失败: {str(e)}", exc_info=True)
-    else:
-        results.append("⏭️ 企业微信：未启用")
-        logger.info("企业微信推送未启用")
-
     # 微信公众号推送
     if config.PUSH_METHODS.get('wechat'):
         try:
@@ -319,24 +342,46 @@ def push_message(weather_data, formatted_message):
         results.append("⏭️ 微信公众号：未启用")
         logger.info("微信公众号推送未启用")
     
-    # Telegram推送
+    # Telegram 多账号推送
     if config.PUSH_METHODS.get('telegram'):
-        try:
-            logger.info("尝试推送到Telegram")
-            MessagePusher.push_to_telegram(
-                config.TELEGRAM_BOT_TOKEN,
-                config.TELEGRAM_CHAT_ID,
-                formatted_message
-            )
-            success_count += 1
-            results.append("✅ Telegram：推送成功")
-            logger.info("Telegram推送成功")
-        except Exception as e:
-            results.append(f"❌ Telegram：推送失败 - {str(e)}")
-            logger.error(f"Telegram推送失败: {str(e)}", exc_info=True)
+        for tg_config in config.TELEGRAM_CONFIGS:
+            if tg_config['enabled']:
+                try:
+                    logger.info(f"尝试推送到 Telegram - {tg_config['name']}")
+                    MessagePusher.push_to_telegram(
+                        tg_config['bot_token'],
+                        tg_config['chat_id'],
+                        formatted_message
+                    )
+                    success_count += 1
+                    results.append(f"✅ Telegram({tg_config['name']})：推送成功")
+                    logger.info(f"Telegram({tg_config['name']}) 推送成功")
+                except Exception as e:
+                    results.append(f"❌ Telegram({tg_config['name']})：推送失败 - {str(e)}")
+                    logger.error(f"Telegram({tg_config['name']}) 推送失败: {str(e)}", exc_info=True)
     else:
         results.append("⏭️ Telegram：未启用")
-        logger.info("Telegram推送未启用")
+        logger.info("Telegram 推送未启用")
+    
+    # 企业微信多群组推送
+    if config.PUSH_METHODS.get('wecom'):
+        for wecom_config in config.WECOM_CONFIGS:
+            if wecom_config['enabled']:
+                try:
+                    logger.info(f"尝试推送到企业微信 - {wecom_config['name']}")
+                    MessagePusher.push_to_wecom(
+                        wecom_config['webhook'],
+                        weather_data
+                    )
+                    success_count += 1
+                    results.append(f"✅ 企业微信({wecom_config['name']})：推送成功")
+                    logger.info(f"企业微信({wecom_config['name']}) 推送成功")
+                except Exception as e:
+                    results.append(f"❌ 企业微信({wecom_config['name']})：推送失败 - {str(e)}")
+                    logger.error(f"企业微信({wecom_config['name']}) 推送失败: {str(e)}", exc_info=True)
+    else:
+        results.append("⏭️ 企业微信：未启用")
+        logger.info("企业微信推送未启用")
     
     # 邮件推送
     if config.PUSH_METHODS.get('email'):

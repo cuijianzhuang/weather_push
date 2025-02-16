@@ -6,7 +6,7 @@ TEMPLATES = {
     'weather': """
 {greeting}
 
-🌈 今日天气播报 
+🌈 {province}{city}天气播报 
 ⏰ 更新时间：{time}
 ━━━━━━━━━━━━━━━
 🌡️ 当前温度：{temp}°C
@@ -17,6 +17,8 @@ TEMPLATES = {
 ━━━━━━━━━━━━━━━
 👔 穿衣建议：
 {clothes_tip}
+
+{memorial_days}
 
 {warm_tip}
 """,

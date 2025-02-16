@@ -26,11 +26,34 @@ WX_TEMPLATE = """
 """
 
 # Telegram配置
-TELEGRAM_BOT_TOKEN = "7271301946:AAG-oAKmJyjX0GuNXSysWjLWCb-EFHoXT_Q"
-TELEGRAM_CHAT_ID = "698060508"
+TELEGRAM_CONFIGS = [
+    {
+        'name': '主账号',  # 配置名称，用于日志标识
+        'bot_token': '7271301946:AAG-oAKmJyjX0GuNXSysWjLWCb-EFHoXT_Q',
+        'chat_id': '698060508',
+        'enabled': True
+    },
+    {
+        'name': '备用账号',
+        'bot_token': 'your_second_bot_token',
+        'chat_id': 'your_second_chat_id',
+        'enabled': True
+    }
+]
 
 # 企业微信配置
-WECOM_WEBHOOK = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=e6b48263-25ec-4750-ad01-4385543014d9"
+WECOM_CONFIGS = [
+    {
+        'name': '主群',  # 群组名称，用于日志标识
+        'webhook': 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=e6b48263-25ec-4750-ad01-4385543014d9',
+        'enabled': True
+    },
+    {
+        'name': '备用群',
+        'webhook': 'your_second_webhook_url',
+        'enabled': True
+    }
+]
 
 # 天行API配置
 TIANAPI_KEY = "204a01116fe07b933f100f36e1763831"
@@ -39,9 +62,11 @@ TIANAPI_KEY = "204a01116fe07b933f100f36e1763831"
 USER_CONFIG = {
     'name': '崔健壮',           # 用户昵称
     'city': '北京',            # 所在城市
+    'province': '北京市',      # 所在省份
     'morning_greeting': True,  # 是否启用早安问候
     'noon_greeting': True,     # 是否启用午安问候
-    'evening_greeting': True   # 是否启用晚安问候
+    'evening_greeting': True,  # 是否启用晚安问候
+    'memorial_days': True     # 是否启用纪念日提醒
 }
 
 # 问候语模板
@@ -205,8 +230,8 @@ EMAIL_TEMPLATE = """
 
 # 更新推送配置
 PUSH_METHODS = {
-    'wecom': True,     # 企业微信推送开关
-    'wechat': True,     # 微信公众号推送开关
+    'wecom': False,     # 企业微信推送开关
+    'wechat': False,     # 微信公众号推送开关
     'telegram': True,  # Telegram推送开关
     'email': True       # 邮件推送开关
 }
@@ -221,4 +246,19 @@ LOG_CONFIG = {
     'max_size': 5*1024*1024, # 单个日志文件的最大大小（5MB）
     'backup_count': 5,       # 保留的备份文件数量
     'log_dir': 'logs',       # 日志文件目录
+}
+
+# 在现有配置后添加纪念日配置
+MEMORIAL_DAYS = {
+    'love_day': {
+        'date': '2024-01-01',  # 恋爱纪念日
+        'name': '恋爱纪念日',
+        'enabled': True
+    },
+    'birthday': {
+        'date': '1995-01-01',  # 生日
+        'name': '生日',
+        'enabled': True
+    },
+    # 可以添加更多纪念日...
 }
