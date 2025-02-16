@@ -1,0 +1,22 @@
+# HTTP 请求
+requests>=2.31.0
+
+# 日期时间处理
+python-dateutil>=2.8.2
+
+# API 相关
+python-telegram-bot>=20.7
+wechatpy>=1.8.18
+
+# 邮件发送
+yagmail>=0.15.293
+
+# 日志处理
+loguru>=0.7.2
+
+# 工具包
+python-dotenv>=1.0.0  # 用于环境变量管理
+schedule>=1.2.1       # 用于定时任务调度
+
+# 天气API
+qweather-api>=1.0.0   # 和风天气API SDK 
