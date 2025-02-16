@@ -157,6 +157,41 @@ def get_memorial_days_message():
         return "\n━━━ 纪念日提醒 ━━━\n" + "\n".join(memorial_messages) + "\n"
     return ""
 
+def calculate_together_days():
+    """计算在一起的天数"""
+    if not config.USER_CONFIG.get('together_days') or not config.TOGETHER_DATE.get('enabled'):
+        return ""
+    
+    try:
+        together_date = datetime.strptime(config.TOGETHER_DATE['date'], '%Y-%m-%d').date()
+        today = date.today()
+        days_count = (today - together_date).days
+        
+        if days_count < 0:
+            return ""
+        
+        # 计算年月日
+        years = days_count // 365
+        remaining_days = days_count % 365
+        months = remaining_days // 30
+        days = remaining_days % 30
+        
+        # 构建消息
+        time_parts = []
+        if years > 0:
+            time_parts.append(f"{years}年")
+        if months > 0:
+            time_parts.append(f"{months}个月")
+        if days > 0:
+            time_parts.append(f"{days}天")
+            
+        time_str = "".join(time_parts)
+        
+        return f"\n💑 我们已经在一起{time_str}啦~\n"
+    except Exception as e:
+        logger.error(f"计算在一起天数时出错: {str(e)}")
+        return ""
+
 def format_message(weather_data, life_info, caihongpi_text=None):
     """根据模板格式化消息"""
     logger.info("开始格式化消息")
@@ -203,9 +238,12 @@ def format_message(weather_data, life_info, caihongpi_text=None):
     logger.info(f"使用模板: {config.TEMPLATE_NAME}")
     template = ALL_TEMPLATES.get(config.TEMPLATE_NAME, ALL_TEMPLATES['weather'])
     
+    # 获取在一起天数消息
+    together_message = calculate_together_days()
+    
     # 准备基础数据
     message_data = {
-        'greeting': greeting or "",  # 如果没有问候语，使用空字符串
+        'greeting': greeting or "",
         'city': config.USER_CONFIG['city'],
         'time': datetime.now().strftime('%Y-%m-%d %H:%M'),
         'temp': weather_data.get('temp', 'N/A'),
@@ -216,7 +254,8 @@ def format_message(weather_data, life_info, caihongpi_text=None):
         'clothes_tip': weather_data.get('clothes_tip', 'N/A'),
         'warm_tip': f"💝 温馨提示：\n{tip}" if tip else "",
         'province': config.USER_CONFIG['province'],
-        'memorial_days': get_memorial_days_message()
+        'memorial_days': get_memorial_days_message(),
+        'together_days': together_message  # 添加在一起天数
     }
     
     # 格式化基础消息
@@ -239,82 +278,45 @@ def format_message(weather_data, life_info, caihongpi_text=None):
     return formatted_message.strip()
 
 def get_weather():
-    """获取和风天气数据"""
-    url = f"https://devapi.qweather.com/v7/weather/now?location={config.LOCATION}&key={config.HEFENG_KEY}"
-    response = requests.get(url)
-    weather_data = response.json()
-    
-    # 获取生活指数
-    life_url = f"https://devapi.qweather.com/v7/indices/1d?type=3&location={config.LOCATION}&key={config.HEFENG_KEY}"
-    life_response = requests.get(life_url)
-    life_data = life_response.json()
-    
-    if weather_data['code'] == '200' and life_data['code'] == '200':
-        weather = weather_data['now']
-        life_info = life_data['daily'][0]
+    """获取天气信息"""
+    try:
+        # 获取和风天气数据
+        url = f"https://devapi.qweather.com/v7/weather/now?location={config.LOCATION}&key={config.HEFENG_KEY}"
+        response = requests.get(url)
+        weather_data = response.json()
         
-        # 获取当前时间
-        current_hour = datetime.now().hour
-        
-        # 根据时间选择问候语
-        greeting = ""
-        if config.USER_CONFIG['morning_greeting'] and 5 <= current_hour <= 10:
-            greeting = random.choice(config.GREETINGS['morning'])
-            logger.info("使用早安问候语")
-        elif config.USER_CONFIG['noon_greeting'] and 11 <= current_hour <= 13:
-            greeting = random.choice(config.GREETINGS['noon'])
-            logger.info("使用午安问候语")
-        elif config.USER_CONFIG['evening_greeting'] and 18 <= current_hour <= 23:
-            greeting = random.choice(config.GREETINGS['evening'])
-            logger.info("使用晚安问候语")
-        
-        # 格式化问候语
-        if greeting:
-            greeting = greeting.format(
-                name=config.USER_CONFIG['name'],
-                city=config.USER_CONFIG['city']
-            )
-        
-        # 根据温度选择温馨提示
-        temp = float(weather.get('temp', 0))
-        tip = ""
-        if temp <= 15:
-            tip = random.choice(config.TIPS['cold'])
-            logger.info("使用寒冷天气提示")
-        elif temp >= 30:
-            tip = random.choice(config.TIPS['hot'])
-            logger.info("使用炎热天气提示")
-        
-        if weather.get('windDir', '').find('雨') != -1:
-            tip = random.choice(config.TIPS['rain'])
-            logger.info("使用雨天提示")
-        
-        if tip:
-            tip = tip.format(name=config.USER_CONFIG['name'])
-        
-        # 准备消息数据
-        message_data = {
-            'temp': weather.get('temp', 'N/A'),
-            'wind_dir': weather.get('windDir', 'N/A'),
-            'wind_scale': weather.get('windScale', 'N/A'),
-            'humidity': weather.get('humidity', 'N/A'),
-            'feels_like': weather.get('feelsLike', 'N/A'),
-            'clothes_tip': life_info.get('text', 'N/A'),
-            'greeting': greeting,  # 添加问候语
-            'warm_tip': tip       # 添加温馨提示
-        }
-        
-        # 如果启用彩虹屁，添加到消息数据中
-        if config.ENABLE_CAIHONGPI:
-            message_data['caihongpi'] = get_caihongpi()
+        if weather_data.get('code') == '200':
+            now = weather_data['now']
             
-        # 获取一言
-        hitokoto = get_hitokoto()
-        if hitokoto:
-            message_data['hitokoto'] = hitokoto
-        
-        return message_data
-    return None
+            # 获取一言
+            hitokoto = get_hitokoto()
+            
+            # 获取穿衣建议
+            clothes_tip = "天气寒冷，建议着棉服、羽绒服、皮衣、皮夹克等厚实保暖衣物。年老体弱者建议着厚羽绒服或棉衣。"
+            
+            # 整合数据
+            weather_info = {
+                'temp': now['temp'],
+                'feels_like': now['feelsLike'],
+                'wind_dir': now['windDir'],
+                'wind_scale': now['windScale'],
+                'humidity': now['humidity'],
+                'clothes_tip': clothes_tip,
+                'hitokoto': hitokoto,
+                'greeting': '',  # 将在 format_message 中设置
+                'warm_tip': '',  # 将在 format_message 中设置
+                'memorial_days': '',  # 将在 format_message 中设置
+                'together_days': calculate_together_days()  # 添加在一起天数
+            }
+            
+            return weather_info
+        else:
+            logger.error(f"获取天气数据失败: {weather_data.get('code')} - {weather_data.get('msg', '未知错误')}")
+            return None
+            
+    except Exception as e:
+        logger.error(f"获取天气信息异常: {str(e)}", exc_info=True)
+        return None
 
 def push_message(weather_data, formatted_message):
     """推送消息到各个平台"""
@@ -387,6 +389,10 @@ def push_message(weather_data, formatted_message):
     if config.PUSH_METHODS.get('email'):
         try:
             logger.info("尝试推送到邮件")
+            # 确保 weather_data 包含所有必要信息
+            if 'together_days' not in weather_data:
+                weather_data['together_days'] = calculate_together_days()
+            
             MessagePusher.push_to_email(
                 config.EMAIL,
                 weather_data,

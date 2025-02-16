@@ -19,7 +19,7 @@ TEMPLATES = {
 {clothes_tip}
 
 {memorial_days}
-
+{together_days}
 {warm_tip}
 """,
     

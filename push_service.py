@@ -5,6 +5,9 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.header import Header
+import logging
+
+logger = logging.getLogger(__name__)
 
 class MessagePusher:
     @staticmethod
@@ -138,103 +141,140 @@ class MessagePusher:
     @staticmethod
     def push_to_email(smtp_config, message_data, subject="天气预报"):
         """推送到邮件"""
-        # 创建邮件对象
-        msg = MIMEMultipart()
-        msg['From'] = smtp_config['sender']
-        msg['To'] = ','.join(smtp_config['receivers'])
-        msg['Subject'] = Header(subject, 'utf-8')
-
-        # 处理问候语
-        greeting = message_data.get('greeting', '')
-        if greeting:
-            greeting_html = f'''
-            <div style="background: linear-gradient(135deg, #6B8DD6 0%, #4B6CB7 100%); 
-                        padding: 30px; 
-                        text-align: center; 
-                        color: white; 
-                        margin-bottom: 20px; 
-                        border-radius: 15px;
-                        animation: fadeIn 0.5s ease-out;">
-                <h1 style="margin: 0; font-size: 28px;">{greeting}</h1>
-            </div>
-            '''
-        else:
-            greeting_html = ''
-
-        # 处理温馨提示
-        warm_tip = message_data.get('warm_tip', '')
-        if warm_tip:
-            warm_tip_html = f'''
-            <div style="margin-bottom: 30px; animation: fadeIn 0.5s ease-out 0.3s;">
-                <h2 style="color: #333; font-size: 20px; margin-bottom: 15px;">
-                    <span style="display: inline-block; margin-right: 8px;">💝</span>
-                    温馨提示
-                </h2>
-                <div style="background: linear-gradient(135deg, #fff0f3 0%, #ffe6ea 100%);
-                          padding: 20px;
-                          border-radius: 10px;
-                          color: #ff6b6b;
-                          line-height: 1.6;
-                          box-shadow: 0 4px 15px rgba(255,107,107,0.1);">
-                    {warm_tip}
-                </div>
-            </div>
-            '''
-        else:
-            warm_tip_html = ''
-
-        # 处理纪念日信息
-        memorial_days = message_data.get('memorial_days', '')
-        if memorial_days:
-            memorial_days_html = f'''
-            <div class="memorial-days">
-                <h2 style="color: #333; font-size: 20px; margin: 0 0 15px;">
-                    <span style="display: inline-block; margin-right: 8px;">🎯</span>
-                    纪念日提醒
-                </h2>
-                {memorial_days.replace('\n', '<br>')}
-            </div>
-            '''
-        else:
-            memorial_days_html = ''
-
-        # 准备模板数据
-        template_data = {
-            'greeting': greeting_html,
-            'time': datetime.now().strftime('%Y-%m-%d %H:%M'),
-            'province': config.USER_CONFIG['province'],
-            'city': config.USER_CONFIG['city'],
-            'temp': message_data.get('temp', 'N/A'),
-            'feels_like': message_data.get('feels_like', 'N/A'),
-            'wind_dir': message_data.get('wind_dir', 'N/A'),
-            'wind_scale': message_data.get('wind_scale', 'N/A'),
-            'humidity': message_data.get('humidity', 'N/A'),
-            'clothes_tip': message_data.get('clothes_tip', 'N/A'),
-            'warm_tip': warm_tip_html,
-            'memorial_days_html': memorial_days_html,
-            'hitokoto_text': message_data.get('hitokoto', {}).get('text', '今天也是美好的一天~'),
-            'hitokoto_from': message_data.get('hitokoto', {}).get('from', '天气助手')
-        }
-        
-        # 替换模板变量
-        html_content = config.EMAIL_TEMPLATE
-        for key, value in template_data.items():
-            html_content = html_content.replace('{{' + key + '}}', str(value))
-        
-        msg.attach(MIMEText(html_content, 'html', 'utf-8'))
-
         try:
-            # 连接Gmail SMTP服务器
-            smtp = smtplib.SMTP(smtp_config['smtp_host'], smtp_config['smtp_port'])
-            smtp.starttls()  # 启用TLS加密
-            smtp.login(smtp_config['sender'], smtp_config['password'])
+            # 添加调试日志
+            logger.info("开始处理邮件数据")
+            logger.info(f"在一起天数信息: {message_data.get('together_days', '无')}")
             
-            # 发送邮件
-            smtp.sendmail(
-                smtp_config['sender'],
-                smtp_config['receivers'],
-                msg.as_string()
-            )
-            smtp.quit()
+            # 创建邮件对象
+            msg = MIMEMultipart()
+            msg['From'] = smtp_config['sender']
+            msg['To'] = ','.join(smtp_config['receivers'])
+            msg['Subject'] = Header(subject, 'utf-8')
+
+            # 处理问候语
+            greeting = message_data.get('greeting', '')
+            if greeting:
+                greeting_html = f'''
+                <div style="background: linear-gradient(135deg, #6B8DD6 0%, #4B6CB7 100%); 
+                            padding: 30px; 
+                            text-align: center; 
+                            color: white; 
+                            margin-bottom: 20px; 
+                            border-radius: 15px;
+                            animation: fadeIn 0.5s ease-out;">
+                    <h1 style="margin: 0; font-size: 28px;">{greeting}</h1>
+                </div>
+                '''
+            else:
+                greeting_html = ''
+
+            # 处理温馨提示
+            warm_tip = message_data.get('warm_tip', '')
+            if warm_tip:
+                warm_tip_html = f'''
+                <div style="margin-bottom: 30px; animation: fadeIn 0.5s ease-out 0.3s;">
+                    <h2 style="color: #333; font-size: 20px; margin-bottom: 15px;">
+                        <span style="display: inline-block; margin-right: 8px;">💝</span>
+                        温馨提示
+                    </h2>
+                    <div style="background: linear-gradient(135deg, #fff0f3 0%, #ffe6ea 100%);
+                              padding: 20px;
+                              border-radius: 10px;
+                              color: #ff6b6b;
+                              line-height: 1.6;
+                              box-shadow: 0 4px 15px rgba(255,107,107,0.1);">
+                        {warm_tip}
+                    </div>
+                </div>
+                '''
+            else:
+                warm_tip_html = ''
+
+            # 处理纪念日信息
+            memorial_days = message_data.get('memorial_days', '')
+            if memorial_days:
+                memorial_days_html = f'''
+                <div class="memorial-days">
+                    <h2 style="color: #333; font-size: 20px; margin: 0 0 15px;">
+                        <span style="display: inline-block; margin-right: 8px;">🎯</span>
+                        纪念日提醒
+                    </h2>
+                    {memorial_days.replace('\n', '<br>')}
+                </div>
+                '''
+            else:
+                memorial_days_html = ''
+
+            # 处理在一起天数
+            together_days = message_data.get('together_days', '')
+            if together_days:
+                logger.info("正在处理在一起天数HTML")
+                together_days_html = f'''
+                <div class="together-days">
+                    <h2 style="color: #333; font-size: 20px; margin: 0 0 15px;">
+                        <span style="display: inline-block; margin-right: 8px;">💑</span>
+                        在一起
+                    </h2>
+                    <div style="font-size: 18px; line-height: 1.6;">
+                        {together_days.replace('\n', '<br>')}
+                    </div>
+                </div>
+                '''
+                logger.info("在一起天数HTML生成完成")
+            else:
+                together_days_html = ''
+                logger.info("未找到在一起天数信息")
+
+            # 准备模板数据
+            template_data = {
+                'greeting': greeting_html,
+                'time': datetime.now().strftime('%Y-%m-%d %H:%M'),
+                'province': config.USER_CONFIG['province'],
+                'city': config.USER_CONFIG['city'],
+                'temp': message_data.get('temp', 'N/A'),
+                'feels_like': message_data.get('feels_like', 'N/A'),
+                'wind_dir': message_data.get('wind_dir', 'N/A'),
+                'wind_scale': message_data.get('wind_scale', 'N/A'),
+                'humidity': message_data.get('humidity', 'N/A'),
+                'clothes_tip': message_data.get('clothes_tip', 'N/A'),
+                'warm_tip': warm_tip_html,
+                'memorial_days_html': memorial_days_html,
+                'together_days_html': together_days_html,
+                'hitokoto_text': message_data.get('hitokoto', {}).get('text', '今天也是美好的一天~'),
+                'hitokoto_from': message_data.get('hitokoto', {}).get('from', '天气助手')
+            }
+            
+            # 添加调试日志
+            # logger.info("模板数据准备完成")
+            # logger.info(f"together_days_html 的内容: {together_days_html[:100]}...")  # 只显示前100个字符
+            
+            # 替换模板变量
+            html_content = config.EMAIL_TEMPLATE
+            for key, value in template_data.items():
+                html_content = html_content.replace('{{' + key + '}}', str(value))
+            
+            # 添加调试日志
+            # logger.info("模板变量替换完成")
+            
+            msg.attach(MIMEText(html_content, 'html', 'utf-8'))
+
+            try:
+                # 连接Gmail SMTP服务器
+                smtp = smtplib.SMTP(smtp_config['smtp_host'], smtp_config['smtp_port'])
+                smtp.starttls()  # 启用TLS加密
+                smtp.login(smtp_config['sender'], smtp_config['password'])
+                
+                # 发送邮件
+                smtp.sendmail(
+                    smtp_config['sender'],
+                    smtp_config['receivers'],
+                    msg.as_string()
+                )
+                smtp.quit()
+            except Exception as e:
+                raise Exception(f"邮件发送失败: {str(e)}")
+
         except Exception as e:
-            raise Exception(f"邮件发送失败: {str(e)}") 
+            logger.error(f"邮件处理过程出错: {str(e)}", exc_info=True)
+            raise 

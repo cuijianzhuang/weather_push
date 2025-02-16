@@ -37,7 +37,7 @@ TELEGRAM_CONFIGS = [
         'name': '备用账号',
         'bot_token': 'your_second_bot_token',
         'chat_id': 'your_second_chat_id',
-        'enabled': True
+        'enabled': False
     }
 ]
 
@@ -51,7 +51,7 @@ WECOM_CONFIGS = [
     {
         'name': '备用群',
         'webhook': 'your_second_webhook_url',
-        'enabled': True
+        'enabled': False
     }
 ]
 
@@ -66,7 +66,8 @@ USER_CONFIG = {
     'morning_greeting': True,  # 是否启用早安问候
     'noon_greeting': True,     # 是否启用午安问候
     'evening_greeting': True,  # 是否启用晚安问候
-    'memorial_days': True     # 是否启用纪念日提醒
+    'memorial_days': True,    # 是否启用纪念日提醒
+    'together_days': True     # 是否启用在一起天数提醒
 }
 
 # 问候语模板
@@ -157,6 +158,42 @@ EMAIL_TEMPLATE = """
             overflow: hidden;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
+        .location-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .memorial-days {
+            background: linear-gradient(135deg, #FFE6E6 0%, #FFF0F0 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .memorial-item {
+            margin: 10px 0;
+            color: #FF6B6B;
+        }
+        .together-days {
+            background: linear-gradient(135deg, #FFE6F0 0%, #FFF0F5 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .together-days h2 {
+            color: #333;
+            font-size: 20px;
+            margin: 0 0 15px;
+        }
+        .together-days div {
+            color: #FF69B4;
+            font-size: 18px;
+            font-weight: bold;
+            line-height: 1.6;
+        }
     </style>
 </head>
 <body>
@@ -168,6 +205,7 @@ EMAIL_TEMPLATE = """
         <div style="background: linear-gradient(135deg, #6B8DD6 0%, #4B6CB7 100%); padding: 30px; text-align: center; color: white;">
             <h1 style="margin: 0; font-size: 28px;">🌈 今日天气预报</h1>
             <p style="margin: 10px 0 0;">{{time}}</p>
+            <div class="location-badge">📍 {{province}}{{city}}</div>
         </div>
 
         <!-- 天气数据部分 -->
@@ -204,6 +242,12 @@ EMAIL_TEMPLATE = """
                     {{clothes_tip}}
                 </div>
             </div>
+
+            <!-- 纪念日提醒 -->
+            {{memorial_days_html}}
+
+            <!-- 在一起天数 -->
+            {{together_days_html}}
 
             <!-- 温馨提示 -->
             {{warm_tip}}
@@ -242,7 +286,7 @@ ENABLE_CAIHONGPI = False   # 是否启用彩虹屁
 
 # 日志配置
 LOG_CONFIG = {
-    'max_days': 30,          # 日志文件保留的最大天数
+    'max_days': 7,          # 日志文件保留的最大天数
     'max_size': 5*1024*1024, # 单个日志文件的最大大小（5MB）
     'backup_count': 5,       # 保留的备份文件数量
     'log_dir': 'logs',       # 日志文件目录
@@ -261,4 +305,11 @@ MEMORIAL_DAYS = {
         'enabled': True
     },
     # 可以添加更多纪念日...
+}
+
+# 添加在一起的日期配置
+TOGETHER_DATE = {
+    'date': '2024-01-01',  # 在一起的日期
+    'name': '在一起',      # 显示的名称
+    'enabled': True        # 是否启用
 }
