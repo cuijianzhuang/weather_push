@@ -29,6 +29,11 @@ class MessagePusher:
         # 准备标题，优先使用问候语
         first_value = greeting if greeting else f"✨ 天气播报 ({current_time})"
         
+        # 预处理温馨提示
+        remark_value = "\n🤖 来自天气助手"
+        if warm_tip:
+            remark_value = f"\n💝 温馨提示：\n{warm_tip}"
+        
         template_data = {
             "first": {
                 "value": first_value,
@@ -59,14 +64,15 @@ class MessagePusher:
                 "color": "#ff7f50"
             },
             "remark": {
-                "value": f"\n💝 温馨提示：\n{warm_tip}" if warm_tip else "\n🤖 来自天气助手",
+                "value": remark_value,
                 "color": "#888888"
             }
         }
         
         # 如果有彩虹屁文本，添加到remark中
         if message_data.get('caihongpi'):
-            template_data["remark"]["value"] = f"\n✨ 每日寄语：\n{message_data['caihongpi']}\n\n🤖 来自天气助手"
+            caihongpi_text = message_data['caihongpi']
+            template_data["remark"]["value"] = f"\n✨ 每日寄语：\n{caihongpi_text}\n\n🤖 来自天气助手"
             template_data["remark"]["color"] = "#ff69b4"
         
         # 准备请求数据
@@ -106,30 +112,38 @@ class MessagePusher:
         warm_tip = message_data.get('warm_tip', '')
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
         
-        # 准备标题
+        # 预处理各部分内容
         title = greeting if greeting else f'# ☁️ 天气播报 ({current_time})'
         
-        # 准备天气实况部分
-        weather_info = (
-            "## 🌡️ 天气实况\n"
-            f"> 当前温度：<font color=\"warning\">{message_data['temp']}°C</font>\n"
-            f"> 体感温度：<font color=\"warning\">{message_data['feels_like']}°C</font>\n"
-            f"> 风向状况：<font color=\"info\">{message_data['wind_dir']}</font>\n"
-            f"> 风力等级：<font color=\"info\">{message_data['wind_scale']}级</font>\n"
-            f"> 相对湿度：<font color=\"info\">{message_data['humidity']}%</font>\n"
-        )
+        # 预处理温度信息
+        temp_text = f"{message_data['temp']}°C"
+        feels_like_text = f"{message_data['feels_like']}°C"
+        wind_dir_text = message_data['wind_dir']
+        wind_scale_text = f"{message_data['wind_scale']}级"
+        humidity_text = f"{message_data['humidity']}%"
         
-        # 准备穿衣建议部分
-        clothes_info = (
-            "\n## 👔 穿衣建议\n"
-            f"{message_data['clothes_tip']}"
-        )
+        # 组装天气实况部分
+        weather_lines = [
+            "## 🌡️ 天气实况",
+            f"> 当前温度：<font color=\"warning\">{temp_text}</font>",
+            f"> 体感温度：<font color=\"warning\">{feels_like_text}</font>",
+            f"> 风向状况：<font color=\"info\">{wind_dir_text}</font>",
+            f"> 风力等级：<font color=\"info\">{wind_scale_text}</font>",
+            f"> 相对湿度：<font color=\"info\">{humidity_text}</font>"
+        ]
+        weather_info = '\n'.join(weather_lines)
         
-        # 准备温馨提示部分
+        # 组装穿衣建议部分
+        clothes_info = '\n'.join([
+            "\n## 👔 穿衣建议",
+            message_data['clothes_tip']
+        ])
+        
+        # 组装温馨提示部分
         tip_info = f"\n## 💝 温馨提示\n{warm_tip}" if warm_tip else ""
         
         # 组合完整消息
-        markdown_content = f"{title}\n\n{weather_info}{clothes_info}{tip_info}"
+        markdown_content = '\n\n'.join([title, weather_info, clothes_info, tip_info])
         
         # 准备请求数据
         post_data = {
@@ -176,6 +190,8 @@ class MessagePusher:
             # 处理温馨提示
             warm_tip = message_data.get('warm_tip', '')
             if warm_tip:
+                # 预处理温馨提示文本
+                processed_tip = warm_tip.replace('💝 温馨提示：', '').replace('\n', '')
                 warm_tip_html = ''.join([
                     '<div style="margin-bottom: 30px; animation: fadeIn 0.5s ease-out 0.3s;">',
                     '<h2 style="color: #333; font-size: 20px; margin-bottom: 15px;">',
@@ -185,7 +201,7 @@ class MessagePusher:
                     '<div style="background: linear-gradient(135deg, #fff0f3 0%, #ffe6ea 100%); ',
                     'padding: 20px; border-radius: 10px; color: #ff6b6b; line-height: 1.6; ',
                     'box-shadow: 0 4px 15px rgba(255,107,107,0.1);">',
-                    f'{warm_tip.replace("💝 温馨提示：\n", "")}',
+                    processed_tip,
                     '</div>',
                     '</div>'
                 ])
@@ -195,13 +211,15 @@ class MessagePusher:
             # 处理纪念日信息
             memorial_days = message_data.get('memorial_days', '')
             if memorial_days:
+                # 预处理纪念日文本
+                processed_memorial = memorial_days.replace('\n', '<br>')
                 memorial_days_html = ''.join([
                     '<div class="memorial-days">',
                     '<h2 style="color: #333; font-size: 20px; margin: 0 0 15px;">',
                     '<span style="display: inline-block; margin-right: 8px;">🎯</span>',
                     '纪念日提醒',
                     '</h2>',
-                    f'{memorial_days.replace("\n", "<br>")}',
+                    processed_memorial,
                     '</div>'
                 ])
             else:
@@ -211,6 +229,8 @@ class MessagePusher:
             together_days = message_data.get('together_days', '')
             if together_days:
                 logger.info("正在处理在一起天数HTML")
+                # 预处理在一起天数文本
+                processed_together = together_days.replace('\n', '<br>')
                 together_days_html = ''.join([
                     '<div class="together-days">',
                     '<h2 style="color: #333; font-size: 20px; margin: 0 0 15px;">',
@@ -218,7 +238,7 @@ class MessagePusher:
                     '在一起',
                     '</h2>',
                     '<div style="font-size: 18px; line-height: 1.6;">',
-                    f'{together_days.replace("\n", "<br>")}',
+                    processed_together,
                     '</div>',
                     '</div>'
                 ])

@@ -198,6 +198,7 @@ def format_message(weather_data, caihongpi_text=None):
     
     # 获取当前时间
     current_hour = datetime.now().hour
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
     
     # 根据时间选择问候语
     greeting = ""
@@ -218,17 +219,11 @@ def format_message(weather_data, caihongpi_text=None):
             city=config.USER_CONFIG['city']
         )
     
-    logger.info(f"使用模板: {config.TEMPLATE_NAME}")
-    template = ALL_TEMPLATES.get(config.TEMPLATE_NAME, ALL_TEMPLATES['weather'])
-    
-    # 获取在一起天数消息
-    together_message = calculate_together_days()
-    
     # 准备基础数据
     message_data = {
         'greeting': greeting or "",
         'city': config.USER_CONFIG['city'],
-        'time': datetime.now().strftime('%Y-%m-%d %H:%M'),
+        'time': current_time,
         'temp': weather_data.get('temp', 'N/A'),
         'wind_dir': weather_data.get('wind_dir', 'N/A'),
         'wind_scale': weather_data.get('wind_scale', 'N/A'),
@@ -238,26 +233,27 @@ def format_message(weather_data, caihongpi_text=None):
         'warm_tip': weather_data.get('warm_tip', ''),
         'province': config.USER_CONFIG['province'],
         'memorial_days': get_memorial_days_message(),
-        'together_days': together_message
+        'together_days': calculate_together_days()
     }
     
     # 格式化基础消息
+    template = ALL_TEMPLATES.get(config.TEMPLATE_NAME, ALL_TEMPLATES['weather'])
     formatted_message = template.format(**message_data)
     
     # 添加一言内容
     if weather_data.get('hitokoto'):
-        hitokoto_text = f"""
-📖 今日一言：
-「{weather_data['hitokoto']['text']}」
-—— {weather_data['hitokoto']['from']}
-"""
+        hitokoto_data = weather_data['hitokoto']
+        hitokoto_text = '\n'.join([
+            "📖 今日一言：",
+            f"「{hitokoto_data['text']}」",
+            f"—— {hitokoto_data['from']}"
+        ])
         formatted_message = f"{formatted_message}\n{hitokoto_text}"
     
     # 如果启用彩虹屁且提供了彩虹屁文本
     if config.ENABLE_CAIHONGPI and caihongpi_text:
         formatted_message = f"{formatted_message}\n🌈 彩虹屁：\n{caihongpi_text}"
     
-    logger.info("消息格式化完成")
     return formatted_message.strip()
 
 def get_weather():
