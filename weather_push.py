@@ -221,6 +221,80 @@ def calculate_together_days():
     
     return f"\n💑 我们已经在一起{time_str}啦~\n"
 
+def format_hourly_forecast(hourly_data):
+    """格式化逐小时预报数据"""
+    if not hourly_data:
+        return ""
+        
+    forecast_lines = ["━━━ 未来天气 ━━━"]
+    for hour in hourly_data:
+        forecast_lines.append(
+            f"⏰ {hour['time']} "
+            f"🌡️ {hour['temp']}°C "
+            f"☁️ {hour['text']} "
+            f"💨 {hour['windDir']}{hour['windScale']}级 "
+            f"☔ {hour['pop']}%"
+        )
+    return "\n".join(forecast_lines)
+
+def format_air_quality(air_data):
+    """格式化空气质量数据"""
+    if not air_data:
+        return ""
+        
+    # 添加空气质量表情符号
+    aqi = int(air_data['aqi'])
+    if aqi <= 50:
+        quality_emoji = "🟢"  # 优
+    elif aqi <= 100:
+        quality_emoji = "🟡"  # 良
+    elif aqi <= 150:
+        quality_emoji = "🟠"  # 轻度污染
+    elif aqi <= 200:
+        quality_emoji = "🔴"  # 中度污染
+    elif aqi <= 300:
+        quality_emoji = "🟣"  # 重度污染
+    else:
+        quality_emoji = "🟤"  # 严重污染
+    
+    air_lines = [
+        "━━━ 空气质量 ━━━",
+        f"{quality_emoji} AQI指数：{air_data['aqi']} ({air_data['category']})",
+        f"😷 PM2.5：{air_data['pm2p5']}μg/m³",
+        f"💨 PM10：{air_data['pm10']}μg/m³",
+        f"🌫️ 其他指标：",
+        f"  • NO₂：{air_data['no2']}μg/m³",
+        f"  • SO₂：{air_data['so2']}μg/m³",
+        f"  • CO：{air_data['co']}mg/m³",
+        f"  • O₃：{air_data['o3']}μg/m³"
+    ]
+    return "\n".join(air_lines)
+
+def format_life_indices(indices_data):
+    """格式化生活指数数据"""
+    if not indices_data:
+        return ""
+        
+    # 指数对应的emoji
+    index_emojis = {
+        '1': '🏃',  # 运动指数
+        '2': '🚗',  # 洗车指数
+        '3': '👔',  # 穿衣指数
+        '5': '☀️',  # 紫外线指数
+        '9': '🤒'   # 感冒指数
+    }
+    
+    indices_lines = ["━━━ 生活指数 ━━━"]
+    for index_type, emoji in index_emojis.items():
+        if index_type in indices_data:
+            index = indices_data[index_type]
+            indices_lines.append(
+                f"{emoji} {index['name']}：{index['category']}\n"
+                f"   {index['text']}"
+            )
+    
+    return "\n".join(indices_lines)
+
 def format_message(weather_data, caihongpi_text=None):
     """根据模板格式化消息"""
     logger.info("开始格式化消息")
@@ -249,6 +323,21 @@ def format_message(weather_data, caihongpi_text=None):
             city=config.USER_CONFIG['city']
         )
     
+    # 格式化逐小时预报
+    hourly_forecast = ""
+    if weather_data.get('hourly_forecast'):
+        hourly_forecast = format_hourly_forecast(weather_data['hourly_forecast'])
+    
+    # 格式化空气质量数据
+    air_quality = ""
+    if weather_data.get('air_quality'):
+        air_quality = format_air_quality(weather_data['air_quality'])
+    
+    # 格式化生活指数数据
+    life_indices = ""
+    if weather_data.get('life_indices'):
+        life_indices = format_life_indices(weather_data['life_indices'])
+    
     # 准备基础数据
     message_data = {
         'greeting': greeting or "",
@@ -263,7 +352,10 @@ def format_message(weather_data, caihongpi_text=None):
         'warm_tip': weather_data.get('warm_tip', ''),
         'province': config.USER_CONFIG['province'],
         'memorial_days': calculate_memorial_days(),
-        'together_days': calculate_together_days()
+        'together_days': calculate_together_days(),
+        'hourly_forecast': hourly_forecast,
+        'air_quality': air_quality,
+        'life_indices': life_indices  # 添加生活指数
     }
     
     # 格式化基础消息
@@ -289,15 +381,19 @@ def format_message(weather_data, caihongpi_text=None):
 def get_weather():
     """获取天气信息"""
     try:
-        # 获取和风天气数据
+        # 获取实时天气数据
         url = f"https://devapi.qweather.com/v7/weather/now?location={config.LOCATION}&key={config.HEFENG_KEY}"
         response = requests.get(url)
         weather_data = response.json()
         
-        # 获取生活指数数据（包含穿衣建议）
-        life_url = f"https://devapi.qweather.com/v7/indices/1d?location={config.LOCATION}&key={config.HEFENG_KEY}&type=3"
-        life_response = requests.get(life_url)
-        life_data = life_response.json()
+        # 获取逐小时预报
+        hourly_forecast = get_hourly_forecast()
+        
+        # 获取生活指数数据
+        life_indices = get_life_indices()
+        
+        # 获取空气质量数据
+        air_quality = get_air_quality()
         
         if weather_data.get('code') == '200':
             now = weather_data['now']
@@ -307,8 +403,8 @@ def get_weather():
             
             # 获取穿衣建议
             clothes_tip = "注意适当增减衣物"
-            if life_data.get('code') == '200' and life_data.get('daily'):
-                clothes_tip = life_data['daily'][0].get('text', clothes_tip)
+            if life_indices and '3' in life_indices:  # 使用生活指数中的穿衣指数
+                clothes_tip = life_indices['3']['text']
             
             # 根据温度生成温馨提示
             temp = float(now['temp'])
@@ -336,10 +432,13 @@ def get_weather():
                 'humidity': now['humidity'],
                 'clothes_tip': clothes_tip,
                 'hitokoto': hitokoto,
-                'greeting': '',  # 将在 format_message 中设置
-                'warm_tip': warm_tip,  # 直接在这里设置温馨提示
-                'memorial_days': '',  # 将在 format_message 中设置
-                'together_days': calculate_together_days()
+                'greeting': '',
+                'warm_tip': warm_tip,
+                'memorial_days': '',
+                'together_days': calculate_together_days(),
+                'hourly_forecast': hourly_forecast,
+                'air_quality': air_quality,
+                'life_indices': life_indices  # 添加生活指数数据
             }
             
             return weather_info
@@ -349,6 +448,94 @@ def get_weather():
             
     except Exception as e:
         logger.error(f"获取天气信息异常: {str(e)}", exc_info=True)
+        return None
+
+def get_hourly_forecast():
+    """获取逐小时天气预报"""
+    try:
+        logger.info("开始获取逐小时天气预报")
+        url = f"https://devapi.qweather.com/v7/weather/24h?location={config.LOCATION}&key={config.HEFENG_KEY}"
+        response = requests.get(url)
+        forecast_data = response.json()
+        
+        if forecast_data.get('code') == '200':
+            hourly_forecasts = []
+            for hour in forecast_data['hourly'][:12]:  # 只取未来12小时
+                forecast_time = datetime.strptime(hour['fxTime'], '%Y-%m-%dT%H:%M%z')
+                hourly_forecasts.append({
+                    'time': forecast_time.strftime('%H:00'),
+                    'temp': hour['temp'],
+                    'text': hour['text'],
+                    'windDir': hour['windDir'],
+                    'windScale': hour['windScale'],
+                    'pop': hour.get('pop', '0')  # 降水概率
+                })
+            logger.info("逐小时天气预报获取成功")
+            return hourly_forecasts
+        else:
+            logger.error(f"获取逐小时预报失败: {forecast_data.get('code')} - {forecast_data.get('msg', '未知错误')}")
+            return None
+            
+    except Exception as e:
+        logger.error(f"获取逐小时天气预报异常: {str(e)}", exc_info=True)
+        return None
+
+def get_air_quality():
+    """获取空气质量信息"""
+    try:
+        logger.info("开始获取空气质量数据")
+        url = f"https://devapi.qweather.com/v7/air/now?location={config.LOCATION}&key={config.HEFENG_KEY}"
+        response = requests.get(url)
+        air_data = response.json()
+        
+        if air_data.get('code') == '200':
+            air = air_data['now']
+            air_quality = {
+                'aqi': air['aqi'],  # 空气质量指数
+                'category': air['category'],  # 空气质量级别
+                'pm2p5': air['pm2p5'],  # PM2.5
+                'pm10': air['pm10'],  # PM10
+                'no2': air['no2'],  # 二氧化氮
+                'so2': air['so2'],  # 二氧化硫
+                'co': air['co'],  # 一氧化碳
+                'o3': air['o3']  # 臭氧
+            }
+            logger.info("空气质量数据获取成功")
+            return air_quality
+        else:
+            logger.error(f"获取空气质量数据失败: {air_data.get('code')} - {air_data.get('msg', '未知错误')}")
+            return None
+            
+    except Exception as e:
+        logger.error(f"获取空气质量数据异常: {str(e)}", exc_info=True)
+        return None
+
+def get_life_indices():
+    """获取生活指数信息"""
+    try:
+        logger.info("开始获取生活指数数据")
+        # 获取多个生活指数: 1-运动，2-洗车，3-穿衣，5-紫外线，9-感冒
+        indices_types = "1,2,3,5,9"
+        url = f"https://devapi.qweather.com/v7/indices/1d?location={config.LOCATION}&key={config.HEFENG_KEY}&type={indices_types}"
+        response = requests.get(url)
+        indices_data = response.json()
+        
+        if indices_data.get('code') == '200':
+            indices = {}
+            for index in indices_data['daily']:
+                indices[index['type']] = {
+                    'name': index['name'],
+                    'category': index['category'],
+                    'text': index['text']
+                }
+            logger.info("生活指数数据获取成功")
+            return indices
+        else:
+            logger.error(f"获取生活指数数据失败: {indices_data.get('code')} - {indices_data.get('msg', '未知错误')}")
+            return None
+            
+    except Exception as e:
+        logger.error(f"获取生活指数数据异常: {str(e)}", exc_info=True)
         return None
 
 def push_message(weather_data, formatted_message):
@@ -459,6 +646,21 @@ def push_message(weather_data, formatted_message):
     else:
         results.append("⏭️ 邮件推送：未启用")
         logger.info("邮件推送未启用")
+    
+    # WxPusher推送（个人微信）
+    if config.WXPUSHER_CONFIG.get('enabled'):
+        try:
+            logger.info("尝试推送到WxPusher")
+            MessagePusher.push_to_wxpusher(weather_data)
+            success_count += 1
+            results.append("✅ WxPusher：推送成功")
+            logger.info("WxPusher推送成功")
+        except Exception as e:
+            results.append(f"❌ WxPusher：推送失败 - {str(e)}")
+            logger.error(f"WxPusher推送失败: {str(e)}", exc_info=True)
+    else:
+        results.append("⏭️ WxPusher：未启用")
+        logger.info("WxPusher推送未启用")
     
     logger.info(f"推送完成，成功次数: {success_count}")
     return success_count, results

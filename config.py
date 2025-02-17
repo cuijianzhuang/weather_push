@@ -85,7 +85,8 @@ EMAIL = {
     'sender': 'cui2421011864@gmail.com',
     'password': 'tsqfhxarzzhdlgmm',
     'receivers': [
-        '2421011864@qq.com'
+        '2421011864@qq.com',
+        'tonrry@vip.qq.com'
     ]
 }
 
@@ -139,4 +140,12 @@ TOGETHER_DATE = {
     'date': '2024-01-01',  # 在一起的日期
     'name': '在一起',      # 显示的名称
     'enabled': True        # 是否启用
+}
+
+# WxPusher配置
+WXPUSHER_CONFIG = {
+    'enabled': True,  # 是否启用WxPusher推送
+    'app_token': 'AT_wRolNkqRMiplwZhyPQWeOniFQiEvn2Ef',  # 你的WxPusher的APP Token
+    'uid': 'UID_PWMOAOC0f3xYzqbCv5pFaZSfsQfp',  # 你的WxPusher的接收消息的用户UID
+    'api_url': 'http://wxpusher.zjiecode.com/api/send/message'  # WxPusher的API地址
 }

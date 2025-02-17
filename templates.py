@@ -103,6 +103,79 @@ EMAIL_TEMPLATE = """
             font-weight: bold;
             line-height: 1.6;
         }
+        .weather-indices {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .air-quality, .life-indices {
+            background: linear-gradient(135deg, #f8faff 0%, #f0f4f9 100%);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .air-quality h2, .life-indices h2 {
+            color: #333;
+            font-size: 20px;
+            margin: 0 0 15px;
+        }
+        
+        .air-quality-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .air-quality-item {
+            background: rgba(255,255,255,0.7);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        .air-quality-item .label {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .air-quality-item .value {
+            color: #4B6CB7;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .life-index-item {
+            background: rgba(255,255,255,0.7);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .life-index-item .title {
+            color: #4B6CB7;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .life-index-item .category {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .life-index-item .text {
+            color: #333;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        @media (max-width: 600px) {
+            .weather-indices {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -144,6 +217,46 @@ EMAIL_TEMPLATE = """
                 <div style="color: #00a8ff; font-size: 20px; font-weight: bold;">{{humidity}}%</div>
             </div>
 
+            <!-- 空气质量和生活指数部分 -->
+            <div class="weather-indices">
+                <!-- 空气质量部分 -->
+                <div class="air-quality">
+                    <h2>🌬️ 空气质量</h2>
+                    <div class="air-quality-grid">
+                        <div class="air-quality-item">
+                            <div class="label">AQI指数</div>
+                            <div class="value">{{air_quality_aqi}} ({{air_quality_category}})</div>
+                        </div>
+                        <div class="air-quality-item">
+                            <div class="label">PM2.5</div>
+                            <div class="value">{{air_quality_pm25}} μg/m³</div>
+                        </div>
+                        <div class="air-quality-item">
+                            <div class="label">PM10</div>
+                            <div class="value">{{air_quality_pm10}} μg/m³</div>
+                        </div>
+                        <div class="air-quality-item">
+                            <div class="label">NO₂</div>
+                            <div class="value">{{air_quality_no2}} μg/m³</div>
+                        </div>
+                        <div class="air-quality-item">
+                            <div class="label">SO₂</div>
+                            <div class="value">{{air_quality_so2}} μg/m³</div>
+                        </div>
+                        <div class="air-quality-item">
+                            <div class="label">CO</div>
+                            <div class="value">{{air_quality_co}} mg/m³</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 生活指数部分 -->
+                <div class="life-indices">
+                    <h2>📊 生活指数</h2>
+                    {{life_indices_html}}
+                </div>
+            </div>
+            
             <!-- 穿衣建议 -->
             <div style="margin-bottom: 30px;">
                 <h2 style="color: #333; font-size: 20px; margin-bottom: 15px;">👔 穿衣建议</h2>
@@ -198,6 +311,55 @@ WX_TEMPLATE = """
 {{remark.DATA}}
 """
 
+def format_hourly_forecast(hourly_data):
+    """格式化逐小时预报数据"""
+    if not hourly_data:
+        return ""
+        
+    forecast_lines = ["━━━ 未来天气 ━━━"]
+    for hour in hourly_data:
+        forecast_lines.append(
+            f"⏰ {hour['time']} "
+            f"🌡️ {hour['temp']}°C "
+            f"☁️ {hour['text']} "
+            f"💨 {hour['windDir']}{hour['windScale']}级 "
+            f"☔ {hour['pop']}%"
+        )
+    return "\n".join(forecast_lines)
+
+def format_air_quality(air_data):
+    """格式化空气质量数据"""
+    if not air_data:
+        return ""
+        
+    # 添加空气质量表情符号
+    aqi = int(air_data['aqi'])
+    if aqi <= 50:
+        quality_emoji = "🟢"  # 优
+    elif aqi <= 100:
+        quality_emoji = "🟡"  # 良
+    elif aqi <= 150:
+        quality_emoji = "🟠"  # 轻度污染
+    elif aqi <= 200:
+        quality_emoji = "🔴"  # 中度污染
+    elif aqi <= 300:
+        quality_emoji = "🟣"  # 重度污染
+    else:
+        quality_emoji = "🟤"  # 严重污染
+    
+    air_lines = [
+        "━━━ 空气质量 ━━━",
+        f"{quality_emoji} AQI指数：{air_data['aqi']} ({air_data['category']})",
+        f"😷 PM2.5：{air_data['pm2p5']}μg/m³",
+        f"💨 PM10：{air_data['pm10']}μg/m³",
+        f"🌫️ 其他指标：",
+        f"  • NO₂：{air_data['no2']}μg/m³",
+        f"  • SO₂：{air_data['so2']}μg/m³",
+        f"  • CO：{air_data['co']}mg/m³",
+        f"  • O₃：{air_data['o3']}μg/m³"
+    ]
+    return "\n".join(air_lines)
+
 # 消息模板配置
 TEMPLATES = {
     'weather': """
@@ -211,9 +373,16 @@ TEMPLATES = {
 🌪️ 风向状况：{wind_dir}
 💨 风力等级：{wind_scale}级
 💧 相对湿度：{humidity}%
+
+{air_quality}
+
+{life_indices}
+
 ━━━━━━━━━━━━━━━
 👔 穿衣建议：
 {clothes_tip}
+
+{hourly_forecast}
 
 {memorial_days}
 {together_days}

@@ -170,7 +170,7 @@ class MessagePusher:
             raise Exception(f"企业微信推送失败: {result.get('errmsg', '未知错误')}")
 
     @staticmethod
-    def push_to_email(smtp_config, message_data, subject=None):
+    def push_to_email(email_config, weather_data, subject):
         """推送到邮件"""
         try:
             # 获取北京时间
@@ -182,16 +182,16 @@ class MessagePusher:
             
             # 添加调试日志
             logger.info("开始处理邮件数据")
-            logger.info(f"在一起天数信息: {message_data.get('together_days', '无')}")
+            logger.info(f"在一起天数信息: {weather_data.get('together_days', '无')}")
             
             # 创建邮件对象
             msg = MIMEMultipart()
-            msg['From'] = smtp_config['sender']
-            msg['To'] = ','.join(smtp_config['receivers'])
+            msg['From'] = email_config['sender']
+            msg['To'] = ','.join(email_config['receivers'])
             msg['Subject'] = Header(subject, 'utf-8')
 
             # 处理问候语
-            greeting = message_data.get('greeting', '')
+            greeting = weather_data.get('greeting', '')
             if greeting:
                 greeting_html = ''.join([
                     '<div style="background: linear-gradient(135deg, #6B8DD6 0%, #4B6CB7 100%); ',
@@ -204,7 +204,7 @@ class MessagePusher:
                 greeting_html = ''
 
             # 处理温馨提示
-            warm_tip = message_data.get('warm_tip', '')
+            warm_tip = weather_data.get('warm_tip', '')
             if warm_tip:
                 # 预处理温馨提示文本
                 processed_tip = warm_tip.replace('💝 温馨提示：', '').replace('\n', '')
@@ -225,7 +225,7 @@ class MessagePusher:
                 warm_tip_html = ''
 
             # 处理纪念日信息
-            memorial_days = message_data.get('memorial_days', '')
+            memorial_days = weather_data.get('memorial_days', '')
             if memorial_days:
                 # 预处理纪念日文本
                 processed_memorial = memorial_days.replace('\n', '<br>')
@@ -242,7 +242,7 @@ class MessagePusher:
                 memorial_days_html = ''
 
             # 处理在一起天数
-            together_days = message_data.get('together_days', '')
+            together_days = weather_data.get('together_days', '')
             if together_days:
                 logger.info("正在处理在一起天数HTML")
                 # 预处理在一起天数文本
@@ -263,23 +263,56 @@ class MessagePusher:
                 together_days_html = ''
                 logger.info("未找到在一起天数信息")
 
+            # 处理空气质量数据
+            air_quality_data = weather_data.get('air_quality', {})
+            if air_quality_data:
+                email_data = {
+                    'air_quality_aqi': air_quality_data.get('aqi', 'N/A'),
+                    'air_quality_category': air_quality_data.get('category', 'N/A'),
+                    'air_quality_pm25': air_quality_data.get('pm2p5', 'N/A'),
+                    'air_quality_pm10': air_quality_data.get('pm10', 'N/A'),
+                    'air_quality_no2': air_quality_data.get('no2', 'N/A'),
+                    'air_quality_so2': air_quality_data.get('so2', 'N/A'),
+                    'air_quality_co': air_quality_data.get('co', 'N/A'),
+                    'air_quality_o3': air_quality_data.get('o3', 'N/A')
+                }
+            else:
+                email_data = {}
+
+            # 处理生活指数数据
+            life_indices_data = weather_data.get('life_indices', {})
+            if life_indices_data:
+                indices_html = []
+                for index_type, index in life_indices_data.items():
+                    indices_html.append(f"""
+                        <div class="life-index-item">
+                            <div class="title">{index['name']}</div>
+                            <div class="category">{index['category']}</div>
+                            <div class="text">{index['text']}</div>
+                        </div>
+                    """)
+                email_data['life_indices_html'] = "\n".join(indices_html)
+            else:
+                email_data['life_indices_html'] = '<div class="life-index-item">暂无生活指数数据</div>'
+
             # 准备模板数据
             template_data = {
                 'greeting': greeting_html,
                 'time': current_time,
                 'province': config.USER_CONFIG['province'],
                 'city': config.USER_CONFIG['city'],
-                'temp': message_data.get('temp', 'N/A'),
-                'feels_like': message_data.get('feels_like', 'N/A'),
-                'wind_dir': message_data.get('wind_dir', 'N/A'),
-                'wind_scale': message_data.get('wind_scale', 'N/A'),
-                'humidity': message_data.get('humidity', 'N/A'),
-                'clothes_tip': message_data.get('clothes_tip', 'N/A'),
+                'temp': weather_data.get('temp', 'N/A'),
+                'feels_like': weather_data.get('feels_like', 'N/A'),
+                'wind_dir': weather_data.get('wind_dir', 'N/A'),
+                'wind_scale': weather_data.get('wind_scale', 'N/A'),
+                'humidity': weather_data.get('humidity', 'N/A'),
+                'clothes_tip': weather_data.get('clothes_tip', 'N/A'),
                 'warm_tip_html': warm_tip_html,
                 'memorial_days_html': memorial_days_html,
                 'together_days_html': together_days_html,
-                'hitokoto_text': message_data.get('hitokoto', {}).get('text', '今天也是美好的一天~'),
-                'hitokoto_from': message_data.get('hitokoto', {}).get('from', '天气助手')
+                'hitokoto_text': weather_data.get('hitokoto', {}).get('text', '今天也是美好的一天~'),
+                'hitokoto_from': weather_data.get('hitokoto', {}).get('from', '天气助手'),
+                **email_data
             }
             
             # 替换模板变量
@@ -291,14 +324,14 @@ class MessagePusher:
 
             try:
                 # 连接Gmail SMTP服务器
-                smtp = smtplib.SMTP(smtp_config['smtp_host'], smtp_config['smtp_port'])
+                smtp = smtplib.SMTP(email_config['smtp_host'], email_config['smtp_port'])
                 smtp.starttls()  # 启用TLS加密
-                smtp.login(smtp_config['sender'], smtp_config['password'])
+                smtp.login(email_config['sender'], email_config['password'])
                 
                 # 发送邮件
                 smtp.sendmail(
-                    smtp_config['sender'],
-                    smtp_config['receivers'],
+                    email_config['sender'],
+                    email_config['receivers'],
                     msg.as_string()
                 )
                 smtp.quit()
@@ -308,3 +341,187 @@ class MessagePusher:
         except Exception as e:
             logger.error(f"邮件处理过程出错: {str(e)}", exc_info=True)
             raise 
+
+    @staticmethod
+    def push_to_wxpusher(weather_data):
+        """推送消息到WxPusher"""
+        if not config.WXPUSHER_CONFIG.get('enabled'):
+            return
+        
+        # 获取当前时间
+        current_time = datetime.now().strftime('%H:%M')
+        
+        # 构建HTML格式的消息内容
+        html_content = f"""
+        <div style="padding: 15px; background: linear-gradient(to bottom right, #f6f8fc, #ffffff); border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 15px;">
+                <h2 style="color: #1a73e8; margin: 0;">🌈 今日天气预报</h2>
+                <p style="color: #5f6368; margin: 5px 0;">{config.USER_CONFIG['province']} {config.USER_CONFIG['city']} · {current_time}</p>
+            </div>
+            
+            <div style="background: #ffffff; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                <p style="font-size: 24px; margin: 0; color: #202124;">🌡️ {weather_data['temp']}°C</p>
+                <p style="color: #5f6368; margin: 5px 0;">体感温度 {weather_data['feels_like']}°C</p>
+                <p style="color: #5f6368; margin: 5px 0;">💨 {weather_data['wind_dir']} {weather_data['wind_scale']}级</p>
+                <p style="color: #5f6368; margin: 5px 0;">💧 相对湿度 {weather_data['humidity']}%</p>
+            </div>
+        """
+        
+        # 添加空气质量信息（如果有）
+        if weather_data.get('air_quality'):
+            air = weather_data['air_quality']
+            # 根据AQI值选择颜色
+            aqi = int(air['aqi'])
+            if aqi <= 50:
+                aqi_color = "#4caf50"  # 优
+            elif aqi <= 100:
+                aqi_color = "#ffeb3b"  # 良
+            elif aqi <= 150:
+                aqi_color = "#ff9800"  # 轻度污染
+            elif aqi <= 200:
+                aqi_color = "#f44336"  # 中度污染
+            elif aqi <= 300:
+                aqi_color = "#9c27b0"  # 重度污染
+            else:
+                aqi_color = "#795548"  # 严重污染
+            
+            html_content += f"""
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                <h3 style="color: #1a73e8; margin: 0 0 10px 0;">🌬️ 空气质量</h3>
+                <p style="margin: 5px 0; color: {aqi_color};">
+                    AQI: {air['aqi']} ({air['category']})
+                </p>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                    <p style="margin: 5px 0; color: #5f6368;">PM2.5: {air['pm2p5']}μg/m³</p>
+                    <p style="margin: 5px 0; color: #5f6368;">PM10: {air['pm10']}μg/m³</p>
+                    <p style="margin: 5px 0; color: #5f6368;">NO₂: {air['no2']}μg/m³</p>
+                    <p style="margin: 5px 0; color: #5f6368;">SO₂: {air['so2']}μg/m³</p>
+                    <p style="margin: 5px 0; color: #5f6368;">CO: {air['co']}mg/m³</p>
+                    <p style="margin: 5px 0; color: #5f6368;">O₃: {air['o3']}μg/m³</p>
+                </div>
+            </div>
+            """
+        
+        # 添加生活指数信息（如果有）
+        if weather_data.get('life_indices'):
+            indices = weather_data['life_indices']
+            html_content += """
+            <div style="background: #e8f0fe; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                <h3 style="color: #1a73e8; margin: 0 0 10px 0;">📋 生活指数</h3>
+                <div style="display: grid; gap: 10px;">
+            """
+            
+            # 指数对应的emoji
+            index_emojis = {
+                '1': '🏃',  # 运动指数
+                '2': '🚗',  # 洗车指数
+                '3': '👔',  # 穿衣指数
+                '5': '☀️',  # 紫外线指数
+                '9': '🤒'   # 感冒指数
+            }
+            
+            for index_type, index in indices.items():
+                emoji = index_emojis.get(index_type, '📌')
+                html_content += f"""
+                    <div style="background: #ffffff; padding: 10px; border-radius: 8px;">
+                        <p style="margin: 0; color: #1a73e8;">{emoji} {index['name']}</p>
+                        <p style="margin: 5px 0; color: #202124;">{index['category']}</p>
+                        <p style="margin: 0; color: #5f6368; font-size: 14px;">{index['text']}</p>
+                    </div>
+                """
+            
+            html_content += """
+                </div>
+            </div>
+            """
+        
+        # 添加温馨提示（如果有）
+        if weather_data.get('warm_tip'):
+            html_content += f"""
+            <div style="background: #fce8e6; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                <h3 style="color: #d93025; margin: 0 0 10px 0;">💝 温馨提示</h3>
+                <p style="margin: 0; color: #d93025;">{weather_data['warm_tip']}</p>
+            </div>
+            """
+        
+        # 添加穿衣建议
+        html_content += f"""
+            <div style="background: #e8f0fe; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                <h3 style="color: #1a73e8; margin: 0 0 10px 0;">👔 穿衣建议</h3>
+                <p style="margin: 0; color: #202124;">{weather_data['clothes_tip']}</p>
+            </div>
+        """
+        
+        # 添加逐小时预报（如果有）
+        if weather_data.get('hourly_forecast'):
+            html_content += """
+            <div style="background: #ffffff; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                <h3 style="color: #1a73e8; margin: 0 0 10px 0;">⏰ 未来天气</h3>
+                <div style="display: flex; overflow-x: auto; padding-bottom: 10px;">
+            """
+            
+            for hour in weather_data['hourly_forecast'][:6]:  # 只显示未来6小时
+                html_content += f"""
+                    <div style="min-width: 80px; text-align: center; margin-right: 10px;">
+                        <p style="margin: 0; color: #202124;">{hour['time']}</p>
+                        <p style="margin: 5px 0; color: #1a73e8;">{hour['temp']}°C</p>
+                        <p style="margin: 0; color: #5f6368;">{hour['text']}</p>
+                        <p style="margin: 5px 0; color: #5f6368;">💧 {hour['pop']}%</p>
+                    </div>
+                """
+            
+            html_content += """
+                </div>
+            </div>
+            """
+        
+        # 添加一言（如果有）
+        if weather_data.get('hitokoto'):
+            hitokoto = weather_data['hitokoto']
+            html_content += f"""
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                <h3 style="color: #1a73e8; margin: 0 0 10px 0;">📖 今日一言</h3>
+                <p style="color: #202124; margin: 0; font-style: italic;">「{hitokoto['text']}」</p>
+                <p style="color: #5f6368; margin: 5px 0; text-align: right;">—— {hitokoto['from']}</p>
+            </div>
+            """
+        
+        # 添加纪念日信息（如果有）
+        if weather_data.get('memorial_days'):
+            html_content += f"""
+            <div style="background: #fef7e0; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                <h3 style="color: #f9a825; margin: 0 0 10px 0;">🎯 纪念日提醒</h3>
+                <p style="color: #f9a825; margin: 0;">{weather_data['memorial_days'].replace('━━━ 纪念日提醒 ━━━\n', '').strip()}</p>
+            </div>
+            """
+        
+        # 添加在一起的天数（如果有）
+        if weather_data.get('together_days'):
+            html_content += f"""
+            <div style="background: #fce4ec; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                <h3 style="color: #e91e63; margin: 0 0 10px 0;">💑 在一起</h3>
+                <p style="color: #e91e63; margin: 0;">{weather_data['together_days'].strip()}</p>
+            </div>
+            """
+        
+        html_content += "</div>"  # 关闭最外层div
+        
+        # 准备请求数据
+        data = {
+            "appToken": config.WXPUSHER_CONFIG['app_token'],
+            "content": html_content,
+            "summary": f"今日天气：{weather_data['temp']}°C",  # 消息摘要
+            "contentType": 2,  # 内容类型：1表示文字，2表示html
+            "uids": [config.WXPUSHER_CONFIG['uid']],
+            "url": "",  # 可选：点击消息时要跳转的URL
+        }
+        
+        # 发送请求
+        response = requests.post(config.WXPUSHER_CONFIG['api_url'], json=data)
+        
+        if response.status_code != 200:
+            raise Exception(f"WxPusher推送失败：{response.text}")
+        
+        result = response.json()
+        if result.get('code') != 1000:
+            raise Exception(f"WxPusher推送失败：{result.get('msg')}") 
