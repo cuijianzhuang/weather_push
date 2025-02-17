@@ -11,6 +11,8 @@ jobs:
     
     steps:
     - uses: actions/checkout@v3
+      with:
+        ref: github_action  # 指定使用 github_action 分支
       
     - name: Set up Python
       uses: actions/setup-python@v4
