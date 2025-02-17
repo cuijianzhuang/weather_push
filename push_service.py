@@ -6,10 +6,19 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.header import Header
 import logging
+import pytz
 
 logger = logging.getLogger(__name__)
 
 class MessagePusher:
+    @staticmethod
+    def get_beijing_time():
+        """获取北京时间"""
+        beijing_tz = pytz.timezone('Asia/Shanghai')
+        utc_now = datetime.utcnow().replace(tzinfo=pytz.UTC)
+        beijing_now = utc_now.astimezone(beijing_tz)
+        return beijing_now
+
     @staticmethod
     def push_to_wechat(app_id, app_secret, user_openid, message_data):
         """推送到微信公众号"""
@@ -24,7 +33,7 @@ class MessagePusher:
         # 获取问候语和温馨提示
         greeting = message_data.get('greeting', '')
         warm_tip = message_data.get('warm_tip', '')
-        current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
+        current_time = MessagePusher.get_beijing_time().strftime('%Y-%m-%d %H:%M')
         
         # 准备标题，优先使用问候语
         first_value = greeting if greeting else f"✨ 天气播报 ({current_time})"
@@ -110,7 +119,7 @@ class MessagePusher:
         # 获取问候语和温馨提示
         greeting = message_data.get('greeting', '')
         warm_tip = message_data.get('warm_tip', '')
-        current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
+        current_time = MessagePusher.get_beijing_time().strftime('%Y-%m-%d %H:%M')
         
         # 预处理各部分内容
         title = greeting if greeting else f'# ☁️ 天气播报 ({current_time})'
@@ -161,9 +170,16 @@ class MessagePusher:
             raise Exception(f"企业微信推送失败: {result.get('errmsg', '未知错误')}")
 
     @staticmethod
-    def push_to_email(smtp_config, message_data, subject="天气预报"):
+    def push_to_email(smtp_config, message_data, subject=None):
         """推送到邮件"""
         try:
+            # 获取北京时间
+            current_time = MessagePusher.get_beijing_time().strftime('%Y-%m-%d %H:%M')
+            
+            # 使用北京时间作为邮件主题
+            if subject is None:
+                subject = f"天气预报 - {current_time}"
+            
             # 添加调试日志
             logger.info("开始处理邮件数据")
             logger.info(f"在一起天数信息: {message_data.get('together_days', '无')}")
@@ -250,7 +266,7 @@ class MessagePusher:
             # 准备模板数据
             template_data = {
                 'greeting': greeting_html,
-                'time': datetime.now().strftime('%Y-%m-%d %H:%M'),
+                'time': current_time,
                 'province': config.USER_CONFIG['province'],
                 'city': config.USER_CONFIG['city'],
                 'temp': message_data.get('temp', 'N/A'),

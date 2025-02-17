@@ -1,5 +1,6 @@
 import requests
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
+import pytz  # 添加时区支持
 import config
 from push_service import MessagePusher
 import http.client
@@ -74,6 +75,14 @@ logger.setLevel(logging.INFO)
 logger.handlers.clear()
 logger.addHandler(file_handler)
 logger.addHandler(console_handler)
+
+# 添加获取北京时间的辅助函数
+def get_beijing_time():
+    """获取北京时间"""
+    beijing_tz = pytz.timezone('Asia/Shanghai')
+    utc_now = datetime.utcnow().replace(tzinfo=pytz.UTC)
+    beijing_now = utc_now.astimezone(beijing_tz)
+    return beijing_now
 
 def get_caihongpi():
     """获取彩虹屁内容"""
@@ -157,48 +166,69 @@ def get_memorial_days_message():
         return "\n━━━ 纪念日提醒 ━━━\n" + "\n".join(memorial_messages) + "\n"
     return ""
 
+def calculate_memorial_days():
+    """计算纪念日天数"""
+    beijing_now = get_beijing_time()
+    today = beijing_now.date()
+    
+    memorial_messages = []
+    for key, memorial in config.MEMORIAL_DAYS.items():
+        if memorial['enabled']:
+            memorial_date = datetime.strptime(memorial['date'], '%Y-%m-%d').date()
+            days = (today - memorial_date).days
+            if days <= 30:  # 只显示30天内的纪念日
+                if days == 0:
+                    message = f"🎉 今天是{memorial['name']}！"
+                else:
+                    message = f"🎯 距离{memorial['name']}还有{days}天"
+                if memorial.get('years_passed', 0) > 0:
+                    message += f"（{memorial['years_passed']}周年）"
+                memorial_messages.append(message)
+    
+    if memorial_messages:
+        return "\n━━━ 纪念日提醒 ━━━\n" + "\n".join(memorial_messages) + "\n"
+    return ""
+
 def calculate_together_days():
     """计算在一起的天数"""
-    if not config.USER_CONFIG.get('together_days') or not config.TOGETHER_DATE.get('enabled'):
+    if not config.TOGETHER_DATE['enabled']:
+        return ""
+        
+    beijing_now = get_beijing_time()
+    today = beijing_now.date()
+    together_date = datetime.strptime(config.TOGETHER_DATE['date'], '%Y-%m-%d').date()
+    days = (today - together_date).days
+    
+    if days < 0:
         return ""
     
-    try:
-        together_date = datetime.strptime(config.TOGETHER_DATE['date'], '%Y-%m-%d').date()
-        today = date.today()
-        days_count = (today - together_date).days
+    # 计算年月日
+    years = days // 365
+    remaining_days = days % 365
+    months = remaining_days // 30
+    days = remaining_days % 30
+    
+    # 构建消息
+    time_parts = []
+    if years > 0:
+        time_parts.append(f"{years}年")
+    if months > 0:
+        time_parts.append(f"{months}个月")
+    if days > 0:
+        time_parts.append(f"{days}天")
         
-        if days_count < 0:
-            return ""
-        
-        # 计算年月日
-        years = days_count // 365
-        remaining_days = days_count % 365
-        months = remaining_days // 30
-        days = remaining_days % 30
-        
-        # 构建消息
-        time_parts = []
-        if years > 0:
-            time_parts.append(f"{years}年")
-        if months > 0:
-            time_parts.append(f"{months}个月")
-        if days > 0:
-            time_parts.append(f"{days}天")
-            
-        time_str = "".join(time_parts)
-        
-        return f"\n💑 我们已经在一起{time_str}啦~\n"
-    except Exception as e:
-        logger.error(f"计算在一起天数时出错: {str(e)}")
-        return ""
+    time_str = "".join(time_parts)
+    
+    return f"\n💑 我们已经在一起{time_str}啦~\n"
 
 def format_message(weather_data, caihongpi_text=None):
     """根据模板格式化消息"""
     logger.info("开始格式化消息")
     
-    # 获取当前时间
-    current_hour = datetime.now().hour
-    current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
+    # 获取北京时间
+    beijing_now = get_beijing_time()
+    current_hour = beijing_now.hour
+    current_time = beijing_now.strftime('%Y-%m-%d %H:%M')
     
     # 根据时间选择问候语
     greeting = ""
@@ -232,7 +262,7 @@ def format_message(weather_data, caihongpi_text=None):
         'clothes_tip': weather_data.get('clothes_tip', 'N/A'),
         'warm_tip': weather_data.get('warm_tip', ''),
         'province': config.USER_CONFIG['province'],
-        'memorial_days': get_memorial_days_message(),
+        'memorial_days': calculate_memorial_days(),
         'together_days': calculate_together_days()
     }
     
@@ -345,7 +375,7 @@ def push_message(weather_data, formatted_message):
     # 更新 weather_data
     weather_data.update({
         'greeting': greeting,
-        'memorial_days': get_memorial_days_message(),
+        'memorial_days': calculate_memorial_days(),
         'together_days': calculate_together_days(),
         'warm_tip': weather_data.get('warm_tip', '')  # 保持原有的温馨提示
     })

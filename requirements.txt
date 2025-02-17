@@ -1,11 +1,11 @@
 # HTTP 请求
-requests>=2.31.0
+requests==2.31.0
 
 # 日期时间处理
 python-dateutil>=2.8.2
 
 # API 相关
-python-telegram-bot>=20.7
+python-telegram-bot>=2.0.0
 wechatpy>=1.8.18
 
 # 邮件发送
@@ -20,3 +20,6 @@ schedule>=1.2.1       # 用于定时任务调度
 
 # 天气API
 # qweather-api>=1.0.0   # 和风天气API SDK
+
+# 时区处理
+pytz>=2024.1
