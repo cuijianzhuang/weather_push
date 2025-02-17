@@ -184,7 +184,7 @@ class MessagePusher:
                               color: #ff6b6b;
                               line-height: 1.6;
                               box-shadow: 0 4px 15px rgba(255,107,107,0.1);">
-                        {warm_tip.replace('💝 温馨提示：\n', '')}
+                        {warm_tip.replace("💝 温馨提示：\n", "")}
                     </div>
                 </div>
                 '''
@@ -200,7 +200,7 @@ class MessagePusher:
                         <span style="display: inline-block; margin-right: 8px;">🎯</span>
                         纪念日提醒
                     </h2>
-                    {memorial_days.replace('\n', '<br>')}
+                    {memorial_days.replace("\n", "<br>")}
                 </div>
                 '''
             else:
@@ -217,7 +217,7 @@ class MessagePusher:
                         在一起
                     </h2>
                     <div style="font-size: 18px; line-height: 1.6;">
-                        {together_days.replace('\n', '<br>')}
+                        {together_days.replace("\n", "<br>")}
                     </div>
                 </div>
                 '''
