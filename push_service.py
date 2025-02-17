@@ -106,22 +106,30 @@ class MessagePusher:
         warm_tip = message_data.get('warm_tip', '')
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
         
-        # 准备 Markdown 格式的消息
-        markdown_content = f"""
-{greeting if greeting else f'# ☁️ 天气播报 ({current_time})'}
-
-## 🌡️ 天气实况
-> 当前温度：<font color=\"warning\">{message_data['temp']}°C</font>
-> 体感温度：<font color=\"warning\">{message_data['feels_like']}°C</font>
-> 风向状况：<font color=\"info\">{message_data['wind_dir']}</font>
-> 风力等级：<font color=\"info\">{message_data['wind_scale']}级</font>
-> 相对湿度：<font color=\"info\">{message_data['humidity']}%</font>
-
-## 👔 穿衣建议
-{message_data['clothes_tip']}
-
-{f'## 💝 温馨提示\n{warm_tip}' if warm_tip else ''}
-"""
+        # 准备标题
+        title = greeting if greeting else f'# ☁️ 天气播报 ({current_time})'
+        
+        # 准备天气实况部分
+        weather_info = (
+            "## 🌡️ 天气实况\n"
+            f"> 当前温度：<font color=\"warning\">{message_data['temp']}°C</font>\n"
+            f"> 体感温度：<font color=\"warning\">{message_data['feels_like']}°C</font>\n"
+            f"> 风向状况：<font color=\"info\">{message_data['wind_dir']}</font>\n"
+            f"> 风力等级：<font color=\"info\">{message_data['wind_scale']}级</font>\n"
+            f"> 相对湿度：<font color=\"info\">{message_data['humidity']}%</font>\n"
+        )
+        
+        # 准备穿衣建议部分
+        clothes_info = (
+            "\n## 👔 穿衣建议\n"
+            f"{message_data['clothes_tip']}"
+        )
+        
+        # 准备温馨提示部分
+        tip_info = f"\n## 💝 温馨提示\n{warm_tip}" if warm_tip else ""
+        
+        # 组合完整消息
+        markdown_content = f"{title}\n\n{weather_info}{clothes_info}{tip_info}"
         
         # 准备请求数据
         post_data = {
