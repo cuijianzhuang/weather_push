@@ -102,10 +102,11 @@ HITOKOTO = {
 
 # 更新推送配置
 PUSH_METHODS = {
-    'wecom': False,     # 企业微信推送开关
+    'wecom': False,      # 企业微信推送开关
     'wechat': False,     # 微信公众号推送开关
-    'telegram': True,  # Telegram推送开关
-    'email': True       # 邮件推送开关
+    'telegram': True,    # Telegram推送开关
+    'email': False,      # 邮件推送开关
+    'wxpusher': True     # WxPusher推送开关
 }
 
 # 消息模板控制
@@ -137,14 +138,13 @@ MEMORIAL_DAYS = {
 
 # 添加在一起的日期配置
 TOGETHER_DATE = {
-    'date': '2024-01-01',  # 在一起的日期
+    'date': '2023-03-17',  # 在一起的日期
     'name': '在一起',      # 显示的名称
     'enabled': True        # 是否启用
 }
 
 # WxPusher配置
 WXPUSHER_CONFIG = {
-    'enabled': True,  # 是否启用WxPusher推送
     'app_token': 'AT_wRolNkqRMiplwZhyPQWeOniFQiEvn2Ef',  # 你的WxPusher的APP Token
     'uid': 'UID_PWMOAOC0f3xYzqbCv5pFaZSfsQfp',  # 你的WxPusher的接收消息的用户UID
     'api_url': 'http://wxpusher.zjiecode.com/api/send/message'  # WxPusher的API地址

@@ -345,7 +345,7 @@ class MessagePusher:
     @staticmethod
     def push_to_wxpusher(weather_data):
         """推送消息到WxPusher"""
-        if not config.WXPUSHER_CONFIG.get('enabled'):
+        if not config.PUSH_METHODS.get('wxpusher'):
             return
         
         # 获取当前时间
