@@ -250,7 +250,7 @@ EMAIL_TEMPLATE = """
             {{together_days_html}}
 
             <!-- 温馨提示 -->
-            {{warm_tip}}
+            {{warm_tip_html}}
 
             <!-- 一言 -->
             <div style="background: #EEF2FF; padding: 20px; border-radius: 10px; margin-top: 30px;">

@@ -184,7 +184,7 @@ class MessagePusher:
                               color: #ff6b6b;
                               line-height: 1.6;
                               box-shadow: 0 4px 15px rgba(255,107,107,0.1);">
-                        {warm_tip}
+                        {warm_tip.replace('💝 温馨提示：\n', '')}
                     </div>
                 </div>
                 '''
@@ -238,24 +238,17 @@ class MessagePusher:
                 'wind_scale': message_data.get('wind_scale', 'N/A'),
                 'humidity': message_data.get('humidity', 'N/A'),
                 'clothes_tip': message_data.get('clothes_tip', 'N/A'),
-                'warm_tip': warm_tip_html,
+                'warm_tip_html': warm_tip_html,
                 'memorial_days_html': memorial_days_html,
                 'together_days_html': together_days_html,
                 'hitokoto_text': message_data.get('hitokoto', {}).get('text', '今天也是美好的一天~'),
                 'hitokoto_from': message_data.get('hitokoto', {}).get('from', '天气助手')
             }
             
-            # 添加调试日志
-            # logger.info("模板数据准备完成")
-            # logger.info(f"together_days_html 的内容: {together_days_html[:100]}...")  # 只显示前100个字符
-            
             # 替换模板变量
             html_content = config.EMAIL_TEMPLATE
             for key, value in template_data.items():
                 html_content = html_content.replace('{{' + key + '}}', str(value))
-            
-            # 添加调试日志
-            # logger.info("模板变量替换完成")
             
             msg.attach(MIMEText(html_content, 'html', 'utf-8'))
 

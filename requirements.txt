@@ -19,4 +19,4 @@ python-dotenv>=1.0.0  # 用于环境变量管理
 schedule>=1.2.1       # 用于定时任务调度
 
 # 天气API
-qweather-api>=1.0.0   # 和风天气API SDK 
+# qweather-api>=1.0.0   # 和风天气API SDK
