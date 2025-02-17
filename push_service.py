@@ -155,54 +155,45 @@ class MessagePusher:
             # 处理问候语
             greeting = message_data.get('greeting', '')
             if greeting:
-                greeting_html = f'''
-                <div style="background: linear-gradient(135deg, #6B8DD6 0%, #4B6CB7 100%); 
-                            padding: 30px; 
-                            text-align: center; 
-                            color: white; 
-                            margin-bottom: 20px; 
-                            border-radius: 15px;
-                            animation: fadeIn 0.5s ease-out;">
-                    <h1 style="margin: 0; font-size: 28px;">{greeting}</h1>
-                </div>
-                '''
+                greeting_html = (
+                    '<div style="background: linear-gradient(135deg, #6B8DD6 0%, #4B6CB7 100%); '
+                    'padding: 30px; text-align: center; color: white; margin-bottom: 20px; '
+                    'border-radius: 15px; animation: fadeIn 0.5s ease-out;">'
+                    f'<h1 style="margin: 0; font-size: 28px;">{greeting}</h1>'
+                    '</div>'
+                )
             else:
                 greeting_html = ''
 
             # 处理温馨提示
             warm_tip = message_data.get('warm_tip', '')
             if warm_tip:
-                warm_tip_html = f'''
-                <div style="margin-bottom: 30px; animation: fadeIn 0.5s ease-out 0.3s;">
-                    <h2 style="color: #333; font-size: 20px; margin-bottom: 15px;">
-                        <span style="display: inline-block; margin-right: 8px;">💝</span>
-                        温馨提示
-                    </h2>
-                    <div style="background: linear-gradient(135deg, #fff0f3 0%, #ffe6ea 100%);
-                              padding: 20px;
-                              border-radius: 10px;
-                              color: #ff6b6b;
-                              line-height: 1.6;
-                              box-shadow: 0 4px 15px rgba(255,107,107,0.1);">
-                        {warm_tip.replace("💝 温馨提示：\n", "")}
-                    </div>
-                </div>
-                '''
+                warm_tip_html = (
+                    '<div style="margin-bottom: 30px; animation: fadeIn 0.5s ease-out 0.3s;">'
+                    '<h2 style="color: #333; font-size: 20px; margin-bottom: 15px;">'
+                    '<span style="display: inline-block; margin-right: 8px;">💝</span>'
+                    '温馨提示'
+                    '</h2>'
+                    '<div style="background: linear-gradient(135deg, #fff0f3 0%, #ffe6ea 100%); '
+                    'padding: 20px; border-radius: 10px; color: #ff6b6b; line-height: 1.6; '
+                    f'box-shadow: 0 4px 15px rgba(255,107,107,0.1);">{warm_tip.replace("💝 温馨提示：\n", "")}</div>'
+                    '</div>'
+                )
             else:
                 warm_tip_html = ''
 
             # 处理纪念日信息
             memorial_days = message_data.get('memorial_days', '')
             if memorial_days:
-                memorial_days_html = f'''
-                <div class="memorial-days">
-                    <h2 style="color: #333; font-size: 20px; margin: 0 0 15px;">
-                        <span style="display: inline-block; margin-right: 8px;">🎯</span>
-                        纪念日提醒
-                    </h2>
-                    {memorial_days.replace("\n", "<br>")}
-                </div>
-                '''
+                memorial_days_html = (
+                    '<div class="memorial-days">'
+                    '<h2 style="color: #333; font-size: 20px; margin: 0 0 15px;">'
+                    '<span style="display: inline-block; margin-right: 8px;">🎯</span>'
+                    '纪念日提醒'
+                    '</h2>'
+                    f'{memorial_days.replace("\n", "<br>")}'
+                    '</div>'
+                )
             else:
                 memorial_days_html = ''
 
@@ -210,17 +201,17 @@ class MessagePusher:
             together_days = message_data.get('together_days', '')
             if together_days:
                 logger.info("正在处理在一起天数HTML")
-                together_days_html = f'''
-                <div class="together-days">
-                    <h2 style="color: #333; font-size: 20px; margin: 0 0 15px;">
-                        <span style="display: inline-block; margin-right: 8px;">💑</span>
-                        在一起
-                    </h2>
-                    <div style="font-size: 18px; line-height: 1.6;">
-                        {together_days.replace("\n", "<br>")}
-                    </div>
-                </div>
-                '''
+                together_days_html = (
+                    '<div class="together-days">'
+                    '<h2 style="color: #333; font-size: 20px; margin: 0 0 15px;">'
+                    '<span style="display: inline-block; margin-right: 8px;">💑</span>'
+                    '在一起'
+                    '</h2>'
+                    '<div style="font-size: 18px; line-height: 1.6;">'
+                    f'{together_days.replace("\n", "<br>")}'
+                    '</div>'
+                    '</div>'
+                )
                 logger.info("在一起天数HTML生成完成")
             else:
                 together_days_html = ''
