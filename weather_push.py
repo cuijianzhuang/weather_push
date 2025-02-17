@@ -648,7 +648,7 @@ def push_message(weather_data, formatted_message):
         logger.info("邮件推送未启用")
     
     # WxPusher推送（个人微信）
-    if config.WXPUSHER_CONFIG.get('enabled'):
+    if config.PUSH_METHODS.get('wxpusher'):
         try:
             logger.info("尝试推送到WxPusher")
             MessagePusher.push_to_wxpusher(weather_data)
