@@ -351,57 +351,52 @@ class MessagePusher:
         # 获取当前时间
         current_time = datetime.now().strftime('%H:%M')
         
-        # 构建HTML格式的消息内容
-        html_content = f"""
-        <div style="padding: 15px; background: linear-gradient(to bottom right, #f6f8fc, #ffffff); border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-            <div style="text-align: center; margin-bottom: 15px;">
-                <h2 style="color: #1a73e8; margin: 0;">🌈 今日天气预报</h2>
-                <p style="color: #5f6368; margin: 5px 0;">{config.USER_CONFIG['province']} {config.USER_CONFIG['city']} · {current_time}</p>
-            </div>
-            
-            <div style="background: #ffffff; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                <p style="font-size: 24px; margin: 0; color: #202124;">🌡️ {weather_data['temp']}°C</p>
-                <p style="color: #5f6368; margin: 5px 0;">体感温度 {weather_data['feels_like']}°C</p>
-                <p style="color: #5f6368; margin: 5px 0;">💨 {weather_data['wind_dir']} {weather_data['wind_scale']}级</p>
-                <p style="color: #5f6368; margin: 5px 0;">💧 相对湿度 {weather_data['humidity']}%</p>
-            </div>
-        """
+        # 构建HTML格式的消息内容 - 使用普通字符串拼接而不是f-string
+        html_content = (
+            '<div style="padding: 15px; background: linear-gradient(to bottom right, #f6f8fc, #ffffff); '
+            'border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">'
+            '<div style="text-align: center; margin-bottom: 15px;">'
+            '<h2 style="color: #1a73e8; margin: 0;">🌈 今日天气预报</h2>'
+            f'<p style="color: #5f6368; margin: 5px 0;">{config.USER_CONFIG["province"]} {config.USER_CONFIG["city"]} · {current_time}</p>'
+            '</div>'
+            '<div style="background: #ffffff; padding: 15px; border-radius: 10px; margin-bottom: 15px;">'
+            f'<p style="font-size: 24px; margin: 0; color: #202124;">🌡️ {weather_data["temp"]}°C</p>'
+            f'<p style="color: #5f6368; margin: 5px 0;">体感温度 {weather_data["feels_like"]}°C</p>'
+            f'<p style="color: #5f6368; margin: 5px 0;">💨 {weather_data["wind_dir"]} {weather_data["wind_scale"]}级</p>'
+            f'<p style="color: #5f6368; margin: 5px 0;">💧 相对湿度 {weather_data["humidity"]}%</p>'
+            '</div>'
+        )
         
         # 添加空气质量信息（如果有）
         if weather_data.get('air_quality'):
             air = weather_data['air_quality']
             # 根据AQI值选择颜色
             aqi = int(air['aqi'])
-            if aqi <= 50:
-                aqi_color = "#4caf50"  # 优
-            elif aqi <= 100:
-                aqi_color = "#ffeb3b"  # 良
-            elif aqi <= 150:
-                aqi_color = "#ff9800"  # 轻度污染
-            elif aqi <= 200:
-                aqi_color = "#f44336"  # 中度污染
-            elif aqi <= 300:
-                aqi_color = "#9c27b0"  # 重度污染
-            else:
-                aqi_color = "#795548"  # 严重污染
+            aqi_color = (
+                "#4caf50" if aqi <= 50 else      # 优
+                "#ffeb3b" if aqi <= 100 else     # 良
+                "#ff9800" if aqi <= 150 else     # 轻度污染
+                "#f44336" if aqi <= 200 else     # 中度污染
+                "#9c27b0" if aqi <= 300 else     # 重度污染
+                "#795548"                        # 严重污染
+            )
             
-            html_content += f"""
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                <h3 style="color: #1a73e8; margin: 0 0 10px 0;">🌬️ 空气质量</h3>
-                <p style="margin: 5px 0; color: {aqi_color};">
-                    AQI: {air['aqi']} ({air['category']})
-                </p>
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-                    <p style="margin: 5px 0; color: #5f6368;">PM2.5: {air['pm2p5']}μg/m³</p>
-                    <p style="margin: 5px 0; color: #5f6368;">PM10: {air['pm10']}μg/m³</p>
-                    <p style="margin: 5px 0; color: #5f6368;">NO₂: {air['no2']}μg/m³</p>
-                    <p style="margin: 5px 0; color: #5f6368;">SO₂: {air['so2']}μg/m³</p>
-                    <p style="margin: 5px 0; color: #5f6368;">CO: {air['co']}mg/m³</p>
-                    <p style="margin: 5px 0; color: #5f6368;">O₃: {air['o3']}μg/m³</p>
-                </div>
-            </div>
-            """
-        
+            air_quality_html = (
+                '<div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">'
+                '<h3 style="color: #1a73e8; margin: 0 0 10px 0;">🌬️ 空气质量</h3>'
+                f'<p style="margin: 5px 0; color: {aqi_color};">AQI: {air["aqi"]} ({air["category"]})</p>'
+                '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">'
+                f'<p style="margin: 5px 0; color: #5f6368;">PM2.5: {air["pm2p5"]}μg/m³</p>'
+                f'<p style="margin: 5px 0; color: #5f6368;">PM10: {air["pm10"]}μg/m³</p>'
+                f'<p style="margin: 5px 0; color: #5f6368;">NO₂: {air["no2"]}μg/m³</p>'
+                f'<p style="margin: 5px 0; color: #5f6368;">SO₂: {air["so2"]}μg/m³</p>'
+                f'<p style="margin: 5px 0; color: #5f6368;">CO: {air["co"]}mg/m³</p>'
+                f'<p style="margin: 5px 0; color: #5f6368;">O₃: {air["o3"]}μg/m³</p>'
+                '</div>'
+                '</div>'
+            )
+            html_content += air_quality_html
+
         # 添加生活指数信息（如果有）
         if weather_data.get('life_indices'):
             indices = weather_data['life_indices']
@@ -437,12 +432,13 @@ class MessagePusher:
         
         # 添加温馨提示（如果有）
         if weather_data.get('warm_tip'):
-            html_content += f"""
-            <div style="background: #fce8e6; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                <h3 style="color: #d93025; margin: 0 0 10px 0;">💝 温馨提示</h3>
-                <p style="margin: 0; color: #d93025;">{weather_data['warm_tip']}</p>
-            </div>
-            """
+            warm_tip_html = (
+                '<div style="background: #fce8e6; padding: 15px; border-radius: 10px; margin-bottom: 15px;">'
+                '<h3 style="color: #d93025; margin: 0 0 10px 0;">💝 温馨提示</h3>'
+                f'<p style="margin: 0; color: #d93025;">{weather_data["warm_tip"]}</p>'
+                '</div>'
+            )
+            html_content += warm_tip_html
         
         # 添加穿衣建议
         html_content += f"""
@@ -478,13 +474,14 @@ class MessagePusher:
         # 添加一言（如果有）
         if weather_data.get('hitokoto'):
             hitokoto = weather_data['hitokoto']
-            html_content += f"""
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                <h3 style="color: #1a73e8; margin: 0 0 10px 0;">📖 今日一言</h3>
-                <p style="color: #202124; margin: 0; font-style: italic;">「{hitokoto['text']}」</p>
-                <p style="color: #5f6368; margin: 5px 0; text-align: right;">—— {hitokoto['from']}</p>
-            </div>
-            """
+            hitokoto_html = (
+                '<div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">'
+                '<h3 style="color: #1a73e8; margin: 0 0 10px 0;">📖 今日一言</h3>'
+                f'<p style="color: #202124; margin: 0; font-style: italic;">「{hitokoto["text"]}」</p>'
+                f'<p style="color: #5f6368; margin: 5px 0; text-align: right;">—— {hitokoto["from"]}</p>'
+                '</div>'
+            )
+            html_content += hitokoto_html
         
         # 添加纪念日信息（如果有）
         if weather_data.get('memorial_days'):
@@ -510,10 +507,10 @@ class MessagePusher:
         data = {
             "appToken": config.WXPUSHER_CONFIG['app_token'],
             "content": html_content,
-            "summary": f"今日天气：{weather_data['temp']}°C",  # 消息摘要
+            "summary": f"今日天气：{weather_data['temp']}°C",
             "contentType": 2,  # 内容类型：1表示文字，2表示html
             "uids": [config.WXPUSHER_CONFIG['uid']],
-            "url": "",  # 可选：点击消息时要跳转的URL
+            "url": ""
         }
         
         # 发送请求
