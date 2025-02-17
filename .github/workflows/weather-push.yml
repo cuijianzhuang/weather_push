@@ -12,7 +12,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
       with:
-        ref: main  # 指定使用 main 分支
+        ref: master  # 指定使用 master 分支
       
     - name: Set up Python
       uses: actions/setup-python@v4
