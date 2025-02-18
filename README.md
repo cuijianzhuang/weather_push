@@ -16,6 +16,8 @@
 - 🎨 支持多种消息模板样式
 - 💝 集成彩虹屁和一言 API
 - 📝 完善的日志记录系统
+- ⚡ GitHub Actions 自动化部署
+- 📅 灵活的定时任务调度
 
 ## 安装说明
 
@@ -32,14 +34,15 @@ pip install -r requirements.txt
 
 ### 依赖包说明
 项目使用的主要依赖包：
-- **requests**: HTTP 请求库，用于调用各类 API
-- **python-dateutil**: 日期时间处理工具
-- **python-telegram-bot**: Telegram Bot API 客户端
-- **wechatpy**: 微信开发工具包
-- **yagmail**: 邮件发送工具
-- **loguru**: 日志处理库
-- **python-dotenv**: 环境变量管理
-- **schedule**: 定时任务调度
+- **requests==2.31.0**: HTTP 请求库，用于调用各类 API
+- **python-dateutil>=2.8.2**: 日期时间处理工具
+- **python-telegram-bot>=2.0.0**: Telegram Bot API 客户端
+- **wechatpy>=1.8.18**: 微信开发工具包
+- **yagmail>=0.15.293**: 邮件发送工具
+- **loguru>=0.7.2**: 日志处理库
+- **python-dotenv>=1.0.0**: 环境变量管理
+- **schedule>=1.2.1**: 定时任务调度
+- **pytz>=2024.1**: 时区处理
 
 3. 配置服务
 复制 `config.py` 并填写相关配置信息：
@@ -66,6 +69,13 @@ USER_CONFIG = {
     'noon_greeting': True,     # 是否启用午安问候
     'evening_greeting': True   # 是否启用晚安问候
 }
+
+# 时间配置
+TIME_CONFIG = {
+    'morning_hour': 7,    # 早安问候时间
+    'noon_hour': 12,      # 午安问候时间
+    'evening_hour': 21    # 晚安问候时间
+}
 ```
 
 ### 推送渠道配置
@@ -77,6 +87,26 @@ PUSH_METHODS = {
     'telegram': True,  # Telegram推送开关
     'email': True      # 邮件推送开关
 }
+
+# 企业微信配置
+WECOM_CONFIG = {
+    'webhook': 'YOUR_WEBHOOK_URL',
+    'mentioned_list': ['@all']  # 可选：需要提醒的成员
+}
+
+# Telegram配置
+TELEGRAM_CONFIG = {
+    'bot_token': 'YOUR_BOT_TOKEN',
+    'chat_id': 'YOUR_CHAT_ID'
+}
+
+# 邮件配置
+EMAIL_CONFIG = {
+    'sender': 'your-email@example.com',
+    'password': 'your-password',
+    'recipients': ['recipient@example.com'],
+    'smtp_server': 'smtp.gmail.com'
+}
 ```
 
 ## 使用方法
@@ -86,7 +116,12 @@ PUSH_METHODS = {
 python weather_push.py
 ```
 
-2. 定时任务（推荐）
+2. 使用调度器（推荐）
+```bash
+python scheduler.py
+```
+
+3. 定时任务
 - Linux/Mac (Crontab):
 ```bash
 # 每天早上7点、中午12点和晚上9点运行
@@ -98,6 +133,15 @@ python weather_push.py
   - 设置触发器为每天指定时间
   - 操作为运行 Python 脚本
 
+## GitHub Actions 自动化
+
+项目已集成 GitHub Actions 工作流，支持：
+- 自动化测试
+- 定时运行天气推送
+- 依赖安全检查
+
+配置文件位于 `.github/workflows/weather-push.yml`
+
 ## 消息模板
 
 支持多种消息模板样式，可在配置文件中设置：
@@ -105,25 +149,59 @@ python weather_push.py
 TEMPLATE_NAME = 'weather'  # 可选值: 'weather', 'elegant', 'modern', 'card', 'compact', 'simple', 'minimal'
 ```
 
+自定义模板可在 `templates.py` 中添加。
+
 ## 日志管理
 
 - 日志文件位于 `logs` 目录
 - 自动清理超过指定天数的日志文件
 - 支持日志文件大小限制和轮转
+- 日志级别可配置
+
+```python
+# 日志配置
+LOG_CONFIG = {
+    'retention': '7 days',    # 日志保留时间
+    'rotation': '500 MB',     # 单个日志文件大小限制
+    'level': 'INFO'           # 日志级别
+}
+```
+
+## 项目结构
+
+```
+weather_push/
+├── weather_push.py    # 主程序
+├── push_service.py    # 推送服务
+├── config.py         # 配置文件
+├── templates.py      # 消息模板
+├── scheduler.py      # 调度器
+├── requirements.txt  # 依赖管理
+├── logs/            # 日志目录
+└── .github/         # GitHub配置
+    └── workflows/   # GitHub Actions
+```
 
 ## 注意事项
 
 1. 请确保所有 API 密钥和配置信息的安全性
 2. 建议使用环境变量管理敏感配置信息
 3. 定期检查日志文件，及时发现并处理异常情况
+4. 推荐使用 Python 3.8 或更高版本
 
 ## 贡献指南
 
 欢迎提交 Issue 和 Pull Request 来帮助改进项目。
 
+1. Fork 本仓库
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 提交 Pull Request
+
 ## 许可证
 
-本项目采用 MIT 许可证。
+本项目采用 MIT 许可证。详见 [LICENSE](LICENSE) 文件。
 
 ## 联系方式
 
