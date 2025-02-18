@@ -400,11 +400,11 @@ class MessagePusher:
         # 添加生活指数信息（如果有）
         if weather_data.get('life_indices'):
             indices = weather_data['life_indices']
-            html_content += """
-            <div style="background: #e8f0fe; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                <h3 style="color: #1a73e8; margin: 0 0 10px 0;">📋 生活指数</h3>
-                <div style="display: grid; gap: 10px;">
-            """
+            indices_html = (
+                '<div style="background: #e8f0fe; padding: 15px; border-radius: 10px; margin-bottom: 15px;">'
+                '<h3 style="color: #1a73e8; margin: 0 0 10px 0;">📋 生活指数</h3>'
+                '<div style="display: grid; gap: 10px;">'
+            )
             
             # 指数对应的emoji
             index_emojis = {
@@ -417,91 +417,70 @@ class MessagePusher:
             
             for index_type, index in indices.items():
                 emoji = index_emojis.get(index_type, '📌')
-                html_content += f"""
-                    <div style="background: #ffffff; padding: 10px; border-radius: 8px;">
-                        <p style="margin: 0; color: #1a73e8;">{emoji} {index['name']}</p>
-                        <p style="margin: 5px 0; color: #202124;">{index['category']}</p>
-                        <p style="margin: 0; color: #5f6368; font-size: 14px;">{index['text']}</p>
-                    </div>
-                """
+                index_html = (
+                    '<div style="background: #ffffff; padding: 10px; border-radius: 8px;">'
+                    f'<p style="margin: 0; color: #1a73e8;">{emoji} {index["name"]}</p>'
+                    f'<p style="margin: 5px 0; color: #202124;">{index["category"]}</p>'
+                    f'<p style="margin: 0; color: #5f6368; font-size: 14px;">{index["text"]}</p>'
+                    '</div>'
+                )
+                indices_html += index_html
             
-            html_content += """
-                </div>
-            </div>
-            """
-        
-        # 添加温馨提示（如果有）
-        if weather_data.get('warm_tip'):
-            warm_tip_html = (
-                '<div style="background: #fce8e6; padding: 15px; border-radius: 10px; margin-bottom: 15px;">'
-                '<h3 style="color: #d93025; margin: 0 0 10px 0;">💝 温馨提示</h3>'
-                f'<p style="margin: 0; color: #d93025;">{weather_data["warm_tip"]}</p>'
-                '</div>'
-            )
-            html_content += warm_tip_html
+            indices_html += '</div></div>'
+            html_content += indices_html
         
         # 添加穿衣建议
-        html_content += f"""
-            <div style="background: #e8f0fe; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                <h3 style="color: #1a73e8; margin: 0 0 10px 0;">👔 穿衣建议</h3>
-                <p style="margin: 0; color: #202124;">{weather_data['clothes_tip']}</p>
-            </div>
-        """
+        clothes_html = (
+            '<div style="background: #e8f0fe; padding: 15px; border-radius: 10px; margin-bottom: 15px;">'
+            '<h3 style="color: #1a73e8; margin: 0 0 10px 0;">👔 穿衣建议</h3>'
+            f'<p style="margin: 0; color: #202124;">{weather_data["clothes_tip"]}</p>'
+            '</div>'
+        )
+        html_content += clothes_html
         
         # 添加逐小时预报（如果有）
         if weather_data.get('hourly_forecast'):
-            html_content += """
-            <div style="background: #ffffff; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                <h3 style="color: #1a73e8; margin: 0 0 10px 0;">⏰ 未来天气</h3>
-                <div style="display: flex; overflow-x: auto; padding-bottom: 10px;">
-            """
+            hourly_html = (
+                '<div style="background: #ffffff; padding: 15px; border-radius: 10px; margin-bottom: 15px;">'
+                '<h3 style="color: #1a73e8; margin: 0 0 10px 0;">⏰ 未来天气</h3>'
+                '<div style="display: flex; overflow-x: auto; padding-bottom: 10px;">'
+            )
             
             for hour in weather_data['hourly_forecast'][:6]:  # 只显示未来6小时
-                html_content += f"""
-                    <div style="min-width: 80px; text-align: center; margin-right: 10px;">
-                        <p style="margin: 0; color: #202124;">{hour['time']}</p>
-                        <p style="margin: 5px 0; color: #1a73e8;">{hour['temp']}°C</p>
-                        <p style="margin: 0; color: #5f6368;">{hour['text']}</p>
-                        <p style="margin: 5px 0; color: #5f6368;">💧 {hour['pop']}%</p>
-                    </div>
-                """
+                hour_html = (
+                    '<div style="min-width: 80px; text-align: center; margin-right: 10px;">'
+                    f'<p style="margin: 0; color: #202124;">{hour["time"]}</p>'
+                    f'<p style="margin: 5px 0; color: #1a73e8;">{hour["temp"]}°C</p>'
+                    f'<p style="margin: 0; color: #5f6368;">{hour["text"]}</p>'
+                    f'<p style="margin: 5px 0; color: #5f6368;">💧 {hour["pop"]}%</p>'
+                    '</div>'
+                )
+                hourly_html += hour_html
             
-            html_content += """
-                </div>
-            </div>
-            """
-        
-        # 添加一言（如果有）
-        if weather_data.get('hitokoto'):
-            hitokoto = weather_data['hitokoto']
-            hitokoto_html = (
-                '<div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">'
-                '<h3 style="color: #1a73e8; margin: 0 0 10px 0;">📖 今日一言</h3>'
-                f'<p style="color: #202124; margin: 0; font-style: italic;">「{hitokoto["text"]}」</p>'
-                f'<p style="color: #5f6368; margin: 5px 0; text-align: right;">—— {hitokoto["from"]}</p>'
-                '</div>'
-            )
-            html_content += hitokoto_html
+            hourly_html += '</div></div>'
+            html_content += hourly_html
         
         # 添加纪念日信息（如果有）
         if weather_data.get('memorial_days'):
-            html_content += f"""
-            <div style="background: #fef7e0; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                <h3 style="color: #f9a825; margin: 0 0 10px 0;">🎯 纪念日提醒</h3>
-                <p style="color: #f9a825; margin: 0;">{weather_data['memorial_days'].replace('━━━ 纪念日提醒 ━━━\n', '').strip()}</p>
-            </div>
-            """
+            memorial_html = (
+                '<div style="background: #fef7e0; padding: 15px; border-radius: 10px; margin-bottom: 15px;">'
+                '<h3 style="color: #f9a825; margin: 0 0 10px 0;">🎯 纪念日提醒</h3>'
+                f'<p style="color: #f9a825; margin: 0;">{weather_data["memorial_days"].replace("━━━ 纪念日提醒 ━━━", "").strip()}</p>'
+                '</div>'
+            )
+            html_content += memorial_html
         
         # 添加在一起的天数（如果有）
         if weather_data.get('together_days'):
-            html_content += f"""
-            <div style="background: #fce4ec; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                <h3 style="color: #e91e63; margin: 0 0 10px 0;">💑 在一起</h3>
-                <p style="color: #e91e63; margin: 0;">{weather_data['together_days'].strip()}</p>
-            </div>
-            """
+            together_html = (
+                '<div style="background: #fce4ec; padding: 15px; border-radius: 10px; margin-bottom: 15px;">'
+                '<h3 style="color: #e91e63; margin: 0 0 10px 0;">💑 在一起</h3>'
+                f'<p style="color: #e91e63; margin: 0;">{weather_data["together_days"].strip()}</p>'
+                '</div>'
+            )
+            html_content += together_html
         
-        html_content += "</div>"  # 关闭最外层div
+        html_content += '</div>'  # 关闭最外层div
         
         # 准备请求数据
         data = {
