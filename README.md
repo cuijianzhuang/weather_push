@@ -109,6 +109,49 @@ EMAIL_CONFIG = {
 }
 ```
 
+### 时区配置
+项目默认使用北京时间（Asia/Shanghai），可以通过以下方式设置时区：
+
+1. 环境变量方式：
+```bash
+# Linux/Mac
+export TZ=Asia/Shanghai
+
+# Windows PowerShell
+$env:TZ = "Asia/Shanghai"
+```
+
+2. Python代码方式：
+```python
+import os
+os.environ['TZ'] = 'Asia/Shanghai'
+```
+
+3. Docker环境：
+```dockerfile
+ENV TZ=Asia/Shanghai
+```
+
+4. GitHub Actions配置：
+```yaml
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Set timezone
+      run: |
+        sudo timedatectl set-timezone Asia/Shanghai
+```
+
+### 环境变量配置
+```python
+# 环境变量配置
+ENV_CONFIG = {
+    'timezone': 'Asia/Shanghai'
+}
+```
+
 ## 使用方法
 
 1. 直接运行
@@ -137,8 +180,11 @@ python scheduler.py
 
 项目已集成 GitHub Actions 工作流，支持：
 - 自动化测试
-- 定时运行天气推送
-- 依赖安全检查
+- 定时推送服务（北京时间 8:00, 12:00, 19:00, 0:00）
+- Python 3.10 运行环境
+- 依赖缓存加速部署
+- 手动触发功能
+- 自动时区设置（已配置为北京时间）
 
 配置文件位于 `.github/workflows/weather-push.yml`
 

@@ -2,7 +2,9 @@ name: Weather Push
 
 on:
   schedule:
-    - cron: '0 0,4,11,16 * * *' # UTC时间，对应北京时间 8:00, 12:00, 19:00, 0:00
+    # UTC 时间：0:00, 4:00, 11:00, 16:00
+    # 对应北京时间：8:00, 12:00, 19:00, 0:00
+    - cron: '0 0,4,11,16 * * *'
   workflow_dispatch: # 允许手动触发
 
 jobs:
@@ -18,6 +20,11 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
+
+    - name: Set timezone
+      run: |
+        sudo timedatectl set-timezone Asia/Shanghai
+        date # 输出当前时间，用于调试
         
     - name: Cache pip packages
       uses: actions/cache@v3
@@ -33,16 +40,18 @@ jobs:
         pip install -r requirements.txt
         
     - name: Run weather push
-    #   env:
+      env:
+        TZ: Asia/Shanghai
         # 添加必要的环境变量
-        # HEFENG_KEY: ${{ secrets.HEFENG_KEY }}
-        # TIANAPI_KEY: ${{ secrets.TIANAPI_KEY }}
-        # WX_APP_ID: ${{ secrets.WX_APP_ID }}
-        # WX_APP_SECRET: ${{ secrets.WX_APP_SECRET }}
-        # WX_TEMPLATE_ID: ${{ secrets.WX_TEMPLATE_ID }}
-        # WX_USER_ID: ${{ secrets.WX_USER_ID }}
-        # TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
-        # TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
-        # EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+        HEFENG_KEY: ${{ secrets.HEFENG_KEY }}
+        TIANAPI_KEY: ${{ secrets.TIANAPI_KEY }}
+        WX_APP_ID: ${{ secrets.WX_APP_ID }}
+        WX_APP_SECRET: ${{ secrets.WX_APP_SECRET }}
+        WX_TEMPLATE_ID: ${{ secrets.WX_TEMPLATE_ID }}
+        WX_USER_ID: ${{ secrets.WX_USER_ID }}
+        TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+        TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
       run: |
+        echo "Current time: $(date)" # 输出当前时间，用于调试
         python weather_push.py 
