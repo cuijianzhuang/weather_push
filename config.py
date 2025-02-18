@@ -85,8 +85,8 @@ EMAIL = {
     'sender': 'cui2421011864@gmail.com',
     'password': 'tsqfhxarzzhdlgmm',
     'receivers': [
-        '2421011864@qq.com',
-        'tonrry@vip.qq.com'
+        '2421011864@qq.com'
+        # 'tonrry@vip.qq.com'
     ]
 }
 
@@ -126,27 +126,30 @@ MEMORIAL_DAYS = {
     'love_day': {
         'date': '2024-01-01',  # 恋爱纪念日
         'name': '恋爱纪念日',
-        'enabled': True
+        'enabled': False
     },
     'birthday': {
-        'date': '1995-01-01',  # 生日
+        'date': '1998-05-07',  # 生日
         'name': '生日',
-        'enabled': True
+        'enabled': False
     },
     # 可以添加更多纪念日...
 }
 
 # 添加在一起的日期配置
 TOGETHER_DATE = {
-    'date': '2024-01-01',  # 在一起的日期
+    'date': '2023-03-17',  # 在一起的日期
     'name': '在一起',      # 显示的名称
-    'enabled': True        # 是否启用
+    'enabled': False        # 是否启用
 }
 
 # WxPusher配置
 WXPUSHER_CONFIG = {
-    'enabled': True,  # 是否启用WxPusher推送
     'app_token': 'AT_wRolNkqRMiplwZhyPQWeOniFQiEvn2Ef',  # 你的WxPusher的APP Token
-    'uid': 'UID_PWMOAOC0f3xYzqbCv5pFaZSfsQfp',  # 你的WxPusher的接收消息的用户UID
+    'uids': [
+        'UID_PWMOAOC0f3xYzqbCv5pFaZSfsQfp',  # 主要接收账号
+        'UID_viPlsNblNM6RBQBOn0MsFiHtDZHr', #微信小号
+        # 'UID_XXXXXX',  # 其他接收账号
+    ],  # 支持多个UID
     'api_url': 'http://wxpusher.zjiecode.com/api/send/message'  # WxPusher的API地址
 }

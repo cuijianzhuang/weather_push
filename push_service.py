@@ -351,14 +351,40 @@ class MessagePusher:
         # 获取当前时间
         current_time = datetime.now().strftime('%H:%M')
         
-        # 构建HTML格式的消息内容 - 使用普通字符串拼接而不是f-string
-        html_content = (
-            '<div style="padding: 15px; background: linear-gradient(to bottom right, #f6f8fc, #ffffff); '
-            'border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">'
-            '<div style="text-align: center; margin-bottom: 15px;">'
-            '<h2 style="color: #1a73e8; margin: 0;">🌈 今日天气预报</h2>'
-            f'<p style="color: #5f6368; margin: 5px 0;">{config.USER_CONFIG["province"]} {config.USER_CONFIG["city"]} · {current_time}</p>'
-            '</div>'
+        # 构建基础样式
+        base_style = (
+            'padding: 15px; '
+            'background: linear-gradient(to bottom right, #f6f8fc, #ffffff); '
+            'border-radius: 15px; '
+            'box-shadow: 0 4px 6px rgba(0,0,0,0.1);'
+        )
+        
+        # 初始化HTML内容
+        html_content = f'<div style="{base_style}">'
+        
+        # 添加问候语和标题
+        if weather_data.get('greeting'):
+            header_html = (
+                '<div style="background: linear-gradient(135deg, #6B8DD6 0%, #4B6CB7 100%); '
+                'padding: 20px; border-radius: 10px; margin-bottom: 15px; text-align: center;">'
+                f'<h2 style="color: white; margin: 0 0 10px 0;">{weather_data["greeting"]}</h2>'
+                '<div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 8px;">'
+                '<h3 style="color: white; margin: 0 0 5px 0;">🌈 今日天气预报</h3>'
+                f'<p style="color: rgba(255,255,255,0.9); margin: 0;">{config.USER_CONFIG["province"]}{config.USER_CONFIG["city"]} · {current_time}</p>'
+                '</div>'
+                '</div>'
+            )
+        else:
+            header_html = (
+                '<div style="text-align: center; margin-bottom: 15px;">'
+                '<h2 style="color: #1a73e8; margin: 0;">🌈 今日天气预报</h2>'
+                f'<p style="color: #5f6368; margin: 5px 0;">{config.USER_CONFIG["province"]}{config.USER_CONFIG["city"]} · {current_time}</p>'
+                '</div>'
+            )
+        html_content += header_html
+        
+        # 天气基本信息
+        weather_basic = (
             '<div style="background: #ffffff; padding: 15px; border-radius: 10px; margin-bottom: 15px;">'
             f'<p style="font-size: 24px; margin: 0; color: #202124;">🌡️ {weather_data["temp"]}°C</p>'
             f'<p style="color: #5f6368; margin: 5px 0;">体感温度 {weather_data["feels_like"]}°C</p>'
@@ -366,6 +392,7 @@ class MessagePusher:
             f'<p style="color: #5f6368; margin: 5px 0;">💧 相对湿度 {weather_data["humidity"]}%</p>'
             '</div>'
         )
+        html_content += weather_basic
         
         # 添加空气质量信息（如果有）
         if weather_data.get('air_quality'):
@@ -488,16 +515,32 @@ class MessagePusher:
             "content": html_content,
             "summary": f"今日天气：{weather_data['temp']}°C",
             "contentType": 2,  # 内容类型：1表示文字，2表示html
-            "uids": [config.WXPUSHER_CONFIG['uid']],
+            "uids": config.WXPUSHER_CONFIG['uids'],  # 使用配置中的uids列表
             "url": ""
         }
         
         # 发送请求
-        response = requests.post(config.WXPUSHER_CONFIG['api_url'], json=data)
-        
-        if response.status_code != 200:
-            raise Exception(f"WxPusher推送失败：{response.text}")
-        
-        result = response.json()
-        if result.get('code') != 1000:
-            raise Exception(f"WxPusher推送失败：{result.get('msg')}") 
+        try:
+            response = requests.post(config.WXPUSHER_CONFIG['api_url'], json=data)
+            response.raise_for_status()  # 检查HTTP响应状态
+            
+            result = response.json()
+            if result.get('code') != 1000:
+                raise Exception(f"WxPusher推送失败：{result.get('msg')}")
+            
+            # 修复响应数据处理
+            success_uids = result.get('data', {})
+            if isinstance(success_uids, list):
+                success_count = len(success_uids)
+            else:
+                success_count = len(success_uids.get('uids', []))
+                
+            if success_count > 0:
+                logger.info(f"WxPusher成功推送给 {success_count} 个接收者")
+            else:
+                logger.warning("WxPusher推送成功，但没有接收者收到消息")
+                
+        except requests.RequestException as e:
+            raise Exception(f"WxPusher请求失败：{str(e)}")
+        except Exception as e:
+            raise Exception(f"WxPusher推送失败：{str(e)}") 
